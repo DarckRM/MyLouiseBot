@@ -100,8 +100,6 @@ public class LouiseHandler implements HandlerInterceptor {
         // 如果是请求插件类功能且不是转发请求则进行转发
         if (featureInfo.getType() == 1 && !request.getRequestURI().contains("/louise/invoke/")) {
             PluginInfo pluginInfo = pluginInfoService.findByCmd(command);
-            // 更新调用统计数据
-            featureInfoService.addCount(featureInfo.getFeature_id(), group_id, user_id);
             request.getRequestDispatcher("invoke/" + pluginInfo.getPlugin_id()).forward(request, response);
             return false;
         }

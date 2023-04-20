@@ -11,7 +11,6 @@ import lombok.Data;
 @Data
 public class CreditInfo {
 
-    @TableId
     private Integer credit_total;
     private int credit_backup;
     private int credit_recover;

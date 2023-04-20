@@ -4,7 +4,6 @@ import com.darcklh.louise.Mapper.SysUserDao;
 import com.darcklh.louise.Model.Result;
 import com.darcklh.louise.Model.Saito.SysUser;
 import com.darcklh.louise.Service.SysUserService;
-import com.darcklh.louise.Utils.isEmpty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -31,7 +30,7 @@ public class SysUserImpl implements SysUserService {
         Result<SysUser> result = new Result<SysUser>();
         SysUser findUser = findUserByNickname(sysUser.getUsername());
 
-        if (isEmpty.isEmpty(findUser)) {
+        if (findUser == null) {
             result.setCode(201);
             result.setMsg("用户名或密码错误");
             return result;

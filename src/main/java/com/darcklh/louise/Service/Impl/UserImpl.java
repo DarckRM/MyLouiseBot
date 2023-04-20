@@ -18,8 +18,6 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 
-import static com.darcklh.louise.Utils.isEmpty.isEmpty;
-
 /**
  * @author DarckLH
  * @date 2021/8/7 19:14
@@ -85,14 +83,14 @@ public class UserImpl extends ServiceImpl<UserDao, User> implements UserService 
         }
         else
             jsonObject.put("reply","注册成功了！请输入!help获得进一步帮助");
-            log.info("用户 " + user.getUser_id() + "(" + user.getNickname() + ") 注册成功!");
+        log.info("用户 " + user.getUser_id() + "(" + user.getNickname() + ") 注册成功!");
         return jsonObject;
     }
 
     @Override
     public User selectById(long user_id) {
         User user = userDao.selectById(user_id);
-        if (isEmpty(user)) {
+        if (user == null) {
             log.warn("用户 " + user_id + " 不存在");
             return null;
         }

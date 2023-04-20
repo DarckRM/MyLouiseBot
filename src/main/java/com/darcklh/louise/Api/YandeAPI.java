@@ -245,7 +245,7 @@ public class YandeAPI {
             limit--;
         }
         // 写入缓存
-        dragonflyUtils.setEx(fileOrigin + " " + final_tags, replyImgList, 3600);
+        dragonflyUtils.setEx(fileOrigin + " " + final_tags + page_nation, replyImgList, 3600);
         List[] taskListPerThread = TaskDistributor.distributeTasks(taskList, 4);
         List<WorkThread> threads = new ArrayList<>();
         for (int j = 0; j < taskListPerThread.length; j++) {
@@ -425,7 +425,7 @@ public class YandeAPI {
         String[] finalTags = tags;
         String[] final_tags_info = tags_info;
         // 尝试从缓存获取
-        ArrayList<String> dragon = dragonflyUtils.get(target + " " + Arrays.toString(tags), ArrayList.class);
+        ArrayList<String> dragon = dragonflyUtils.get(target + " " + Arrays.toString(tags) + pageNation[0] + "页/" +  pageNation[1] + "条", ArrayList.class);
         if (dragon != null) {
             log.info("已找到 Dragonfly 缓存");
             String page_nation = pageNation[0] + "页/" +  pageNation[1] + "条";
@@ -482,14 +482,14 @@ public class YandeAPI {
         uri += type + ".json";
 
         String finalUri = uri;
-        // 尝试从缓存获取
-        ArrayList<String> dragon = dragonflyUtils.get(target + " /day", ArrayList.class);
-        if (dragon != null) {
-            log.info("已找到 Dragonfly 缓存");
-            String page_nation =  "1 页/ 10 条";
-            instantSend(Message.build(inMessage), dragon, "/day", page_nation);
-            return null;
-        }
+//        // 尝试从缓存获取
+//        ArrayList<String> dragon = dragonflyUtils.get(target + " /day", ArrayList.class);
+//        if (dragon != null) {
+//            log.info("已找到 Dragonfly 缓存");
+//            String page_nation =  "1 页/ 10 条";
+//            instantSend(Message.build(inMessage), dragon, "/day", page_nation);
+//            return null;
+//        }
         new Thread(() -> {
             // 构造消息请求体
             OutMessage outMessage = new OutMessage(inMessage);

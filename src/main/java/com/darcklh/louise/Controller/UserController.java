@@ -5,7 +5,6 @@ import com.darcklh.louise.Model.Louise.User;
 import com.darcklh.louise.Model.Result;
 import com.darcklh.louise.Model.VO.UserRole;
 import com.darcklh.louise.Service.UserService;
-import com.darcklh.louise.Utils.isEmpty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,7 +24,7 @@ public class UserController {
     public Result<UserRole> findAll() {
         Result<UserRole> result = new Result<>();
         List<UserRole> userList = userService.findAll();
-        if (isEmpty.isEmpty(userList)) {
+        if (userList.size() == 0) {
             result.setCode(202);
             return result;
         }
@@ -36,16 +35,16 @@ public class UserController {
     }
 
     @RequestMapping("switchStatus")
-    public Result test(@RequestBody JSONObject jsonObject) {
-        Result result = new Result();
+    public Result<String> test(@RequestBody JSONObject jsonObject) {
+        Result<String> result = new Result<>();
         result.setMsg(userService.banUser(jsonObject.getLong("user_id")));
         result.setCode(200);
         return result;
     }
 
     @RequestMapping("save")
-    public Result save(@RequestBody UserRole userRole) {
-        Result result = new Result();
+    public Result<String> save(@RequestBody UserRole userRole) {
+        Result<String> result = new Result<>();
         result.setMsg(userService.joinLouise(userRole.getUser_id(), userRole.getGroup_id()).toString());
         result.setCode(200);
         return result;

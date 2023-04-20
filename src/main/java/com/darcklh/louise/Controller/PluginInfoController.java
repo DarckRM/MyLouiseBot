@@ -1,13 +1,9 @@
 package com.darcklh.louise.Controller;
 
-import com.alibaba.fastjson.JSONObject;
 import com.darcklh.louise.Model.Result;
-import com.darcklh.louise.Model.Saito.FeatureInfo;
 import com.darcklh.louise.Model.Saito.PluginInfo;
 import com.darcklh.louise.Service.PluginInfoService;
-import com.darcklh.louise.Utils.isEmpty;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.ibatis.plugin.Plugin;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -45,7 +41,7 @@ public class PluginInfoController {
     public Result<PluginInfo> findBy() {
         Result<PluginInfo> result = new Result<>();
         List<PluginInfo> pluginInfos = pluginInfoService.findBy();
-        if (isEmpty.isEmpty(pluginInfos)) {
+        if (pluginInfos.size() == 0) {
             result.setCode(202);
             return result;
         }

@@ -32,8 +32,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-import static com.darcklh.louise.Utils.isEmpty.isEmpty;
-
 @Slf4j
 @RestController
 public class MyLouiseApi implements ErrorController {
@@ -399,14 +397,14 @@ public class MyLouiseApi implements ErrorController {
 
         User user = userService.selectById(user_id);
         Role role = roleService.selectById(user.getRole_id());
-        if (isEmpty(user)) {
+        if (user == null) {
             returnJson.put("reply", "没有你的信息诶");
         } else {
             OutMessage out = new OutMessage(inMessage);
             String nickname = user.getNickname();
             Timestamp create_time = user.getCreate_time();
-            Integer count_setu = user.getCount_setu();
-            Integer count_upload = user.getCount_upload();
+            int count_setu = user.getCount_setu();
+            int count_upload = user.getCount_upload();
 
             String myInfos = nickname + "，你的个人信息" +
                     "\n总共请求功能次数：" + count_setu +

@@ -1,0 +1,64 @@
+#运行端口
+server:
+  port: 8099
+
+spring:
+  profiles:
+    active: dev
+  mvc:
+    static-path-pattern: /templates/asserts/**
+  servlet:
+    multipart:
+      max-request-size: 10MB
+      max-file-size: 5000KB
+
+#配饰mybatisPlus
+mybatis-plus:
+  configuration:
+    #关闭表字段下划线自动转驼峰导致实体类字段无法匹配
+    map-underscore-to-camel-case: false
+    #开启Dao层日志
+  #        log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  mapper-locations: classpath*:xml
+  global-config:
+    db-config:
+      #表名前缀
+      table-prefix: t_
+
+#Louise相关配置
+LOUISE:
+  # 启动后台时BOT欢迎语句
+  WELCOME_SENTENCE:
+  # 帮助图片的URL，借助CQHTTP的QR码，可以使用相对路径调用本地图片
+  HELP_PAGE:
+  # 管理员QQ，一些管理员才能使用的命令需要验证S
+  ADMIN_NUMBER:
+  #图片缓存位置
+  CACHE:
+    LOCATION: cache/
+    IMAGE_LOCATION: cache/images/
+  #报错信息
+  ERROR:
+    UNKNOWN_COMMAND: 露易丝没有听懂诶，如果需要帮助的话请说!help
+    THIRD_API_REQUEST_FAILED: 露易丝请求失败了！
+    UNKNOWN_USER: 你还没有在露易丝这里留下你的记录哦，请使用!join
+    BANNED_USER: 你的权限暂时被禁用了哦
+    UPLOAD_IMAGE_FAILED: 上传图片失败！请检查你的参数是否正确，以这种格式使用哦!find [图片]
+#CQ-HTTP相关配置
+BOT:
+  # BOT相对MyLouise的图片库位置
+  LOUISE_CACHE_IMAGE: ../../../../MyLouise/cache/images/
+  BASE_URL: http://127.0.0.1:5700
+  HTTP_POST_KEY:
+#第三方API相关配置
+API:
+  PIXIV:
+    REVERSE_PROXY: https://i.pixiv.re/
+    PROXY_URL: https://pixiv.re/
+  SOURCENAO:
+    URL: https://saucenao.com/search.php
+    API_KEY:
+    ERROR:
+      REQUEST_FAILED: SourceNAO出问题了，不关咱的事
+logging:
+  config: classpath:logback-spring.xml

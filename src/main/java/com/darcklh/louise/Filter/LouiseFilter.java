@@ -2,10 +2,7 @@ package com.darcklh.louise.Filter;
 
 import com.alibaba.fastjson.JSONObject;
 import com.darcklh.louise.Utils.HttpServletWrapper;
-import com.darcklh.louise.Utils.isEmpty;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
@@ -36,7 +33,7 @@ public class LouiseFilter implements Filter {
 
 //        String ip = request.getRemoteHost();
 
-        if (!isEmpty.isEmpty(jsonObject)) {
+        if (jsonObject.isEmpty()) {
             //排除心跳检测以及静态资源
             String post_type = jsonObject.getString("post_type");
             switch (post_type) {

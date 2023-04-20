@@ -6,13 +6,11 @@ import com.darcklh.louise.Model.Result;
 import com.darcklh.louise.Model.Saito.FeatureInfo;
 import com.darcklh.louise.Model.VO.GroupRole;
 import com.darcklh.louise.Service.GroupService;
-import com.darcklh.louise.Utils.isEmpty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -31,7 +29,7 @@ public class GroupController {
     public Result<GroupRole> findBy() {
         Result<GroupRole> result = new Result<>();
         List<GroupRole> groups = groupService.findGroupRoleBy();
-        if (isEmpty.isEmpty(groups)) {
+        if (groups.size() == 0) {
             result.setCode(202);
             return result;
         }
@@ -56,8 +54,8 @@ public class GroupController {
     }
 
     @RequestMapping("switchStatus")
-    public Result switchStatus(@RequestBody JSONObject jsonObject) {
-        Result result = new Result();
+    public Result<String> switchStatus(@RequestBody JSONObject jsonObject) {
+        Result<String> result = new Result<>();
         result.setMsg(groupService.switchStatus(jsonObject.getLong("group_id")));
         if (result.getMsg().equals("变更状态失败")) {
             result.setCode(201);

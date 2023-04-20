@@ -40,7 +40,7 @@ public class SaitoController {
     @RequestMapping("/error")
     public JSONObject error() {
         JSONObject jsonObject = new JSONObject();
-        Result<String> result = new Result();
+        Result<String> result = new Result<>();
         result.setMsg("资源未找到");
         result.setData("/404");
         jsonObject.put("result", result);
@@ -49,10 +49,7 @@ public class SaitoController {
 
     @RequestMapping("saito/login")
     public Result<SysUser> Login(@RequestBody SysUser sysUser) {
-
-        Result<SysUser> result = sysUserService.Login(sysUser);
-
-        return result;
+        return sysUserService.Login(sysUser);
     }
 
     /**

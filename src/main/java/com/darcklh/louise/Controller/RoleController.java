@@ -5,9 +5,7 @@ import com.darcklh.louise.Model.Result;
 import com.darcklh.louise.Model.VO.FeatureInfoMin;
 import com.darcklh.louise.Model.VO.RoleFeatureId;
 import com.darcklh.louise.Service.RoleService;
-import com.darcklh.louise.Utils.isEmpty;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -31,7 +29,7 @@ public class RoleController {
     public Result<Role> findBy() {
         Result<Role> result = new Result<>();
         List<Role> roles = roleService.findBy();
-        if (isEmpty.isEmpty(roles)) {
+        if (roles.size() == 0) {
             result.setCode(202);
             return result;
         }
@@ -44,7 +42,7 @@ public class RoleController {
     @RequestMapping("edit")
     public Result edit(@RequestBody RoleFeatureId roleFeatureId, Integer type) {
 
-        Result result = new Result();
+        Result<String> result = new Result<>();
 
         // 判断是否修改功能权限列表
         if (type != null) {
@@ -68,8 +66,8 @@ public class RoleController {
     }
 
     @RequestMapping("switchStatus")
-    public Result test(@RequestBody Role role) {
-        Result result = new Result();
+    public Result<String> test(@RequestBody Role role) {
+        Result<String> result = new Result<>();
         System.out.println(role);
         result.setMsg(roleService.switchStatus(role.getRole_id(), role.getRole_name()));
         result.setCode(200);

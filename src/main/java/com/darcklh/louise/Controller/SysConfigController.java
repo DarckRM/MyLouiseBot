@@ -51,11 +51,11 @@ public class SysConfigController {
     }
 
     @RequestMapping("edit")
-    public Result editSysConfig(@RequestBody List<SysConfig> sysConfigList) {
+    public Result<String> editSysConfig(@RequestBody List<SysConfig> sysConfigList) {
         List<SysConfig> originalSysConfigs = sysConfigService.findAllSysConfig();
         List<SysConfig> presentSysConfigs = new ArrayList<>();
 
-        Result result = new Result();
+        Result<String> result = new Result<>();
         result.setMsg("未变更配置");
         int i = 0;
         int index = 0;

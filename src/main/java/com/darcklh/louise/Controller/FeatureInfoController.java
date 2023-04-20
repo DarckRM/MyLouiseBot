@@ -1,11 +1,9 @@
 package com.darcklh.louise.Controller;
 
 import com.alibaba.fastjson.JSONObject;
-import com.darcklh.louise.Model.Louise.User;
 import com.darcklh.louise.Model.Result;
 import com.darcklh.louise.Model.Saito.FeatureInfo;
 import com.darcklh.louise.Service.FeatureInfoService;
-import com.darcklh.louise.Utils.isEmpty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,7 +27,7 @@ public class FeatureInfoController {
     public Result<FeatureInfo> findBy() {
         Result<FeatureInfo> result = new Result<>();
         List<FeatureInfo> featureInfos = featureInfoService.findBy();
-        if (isEmpty.isEmpty(featureInfos)) {
+        if (featureInfos.size() == 0) {
             result.setCode(202);
             return result;
         }
@@ -40,16 +38,16 @@ public class FeatureInfoController {
     }
 
     @RequestMapping("save")
-    public Result add(@RequestBody FeatureInfo featureInfo) {
-        Result result = new Result();
+    public Result<String> add(@RequestBody FeatureInfo featureInfo) {
+        Result<String> result = new Result<>();
         result.setMsg(featureInfoService.add(featureInfo));
         result.setCode(200);
         return result;
     }
 
     @RequestMapping("edit")
-    public Result edit(@RequestBody FeatureInfo featureInfo) {
-        Result result = new Result();
+    public Result<String> edit(@RequestBody FeatureInfo featureInfo) {
+        Result<String> result = new Result<>();
         result.setMsg(featureInfoService.editBy(featureInfo));
         result.setCode(200);
         return result;
@@ -60,8 +58,8 @@ public class FeatureInfoController {
     }
 
     @RequestMapping("switchStatus")
-    public Result test(@RequestBody JSONObject jsonObject) {
-        Result result = new Result();
+    public Result<String> test(@RequestBody JSONObject jsonObject) {
+        Result<String> result = new Result<>();
         result.setMsg(featureInfoService.switchStatus(jsonObject.getInteger("feature_id"), jsonObject.getString("feature_name")));
         if (result.getMsg().equals("变更状态失败")) {
             result.setCode(201);
