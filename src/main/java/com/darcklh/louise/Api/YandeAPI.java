@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ThreadFactory;
 import java.util.regex.Pattern;
 
 /**
@@ -41,7 +42,7 @@ import java.util.regex.Pattern;
 @RestController
 public class YandeAPI {
     // 每页最大数
-    private static int LIMIT = 10;
+    private static final int LIMIT = 10;
 
     @Autowired
     FileControlApi fileControlApi;
@@ -136,18 +137,14 @@ public class YandeAPI {
      * @return
      */
     @RequestMapping("louise/yande/help")
-    public JSONObject booruHelp(@RequestBody InMessage inMessage) {
-
-        JSONObject reply = new JSONObject();
-
-        String message = "[CQ:at,qq=" + inMessage.getUser_id() + "]所有符号请使用英文符号\n"
-               + "用例: !yande/day \n说明: 请求今日好图，day可为week,month\n\n"
-               + "用例: !yande hatsune_miku \n说明: 初音未来相关图片，可用空格分隔最大4个标签\n\n"
-               + "用例: !yande hatsune_miku | 2 10 \n说明: 初音未来相关图片第2页的10张，只有一个参数就只算页数\n\n"
-               + "用例: !yande/tags miku \n说明: 查询和miku有关的标签，翻页方法和上面一致\n\n"
-               + "用例: !yande/add 初音未来 ミク \n说明: 对初音未来的标签追加别名ミク，也可以不指定别名";
-        reply.put("reply", message);
-        return reply;
+    public void booruHelp(@RequestBody InMessage inMessage) {
+        Message.build(inMessage).at().text("所有符号请使用英文符号\n")
+                .text("用例: !yande/day \n说明: 请求今日好图，day可为week,month\n\n")
+                .text("用例: !yande hatsune_miku \n说明: 初音未来相关图片，可用空格分隔最大4个标签\n\n")
+                .text("用例: !yande hatsune_miku | 2 10 \n说明: 初音未来相关图片第2页的10张，只有一个参数就只算页数\n\n")
+                .text("用例: !yande/tags miku \n说明: 查询和miku有关的标签，翻页方法和上面一致\n\n")
+                .text("用例: !yande/add 初音未来 ミク \n说明: 对初音未来的标签追加别名ミク，也可以不指定别名")
+                .send();
     }
 
     /**
@@ -247,13 +244,14 @@ public class YandeAPI {
         // 写入缓存
         dragonflyUtils.setEx(fileOrigin + " " + final_tags + page_nation, replyImgList, 3600);
         List[] taskListPerThread = TaskDistributor.distributeTasks(taskList, 4);
-        List<WorkThread> threads = new ArrayList<>();
+        ThreadFactory tf = Thread.ofVirtual().factory();
+        List<Thread> threads = new ArrayList<>();
         for (int j = 0; j < taskListPerThread.length; j++) {
-            WorkThread workThread = new WorkThread(taskListPerThread[j], j);
+            Thread workThread = tf.newThread(new WorkThread(taskListPerThread[j], j));
             threads.add(workThread);
         }
 
-        for (WorkThread thread : threads)
+        for (Thread thread : threads)
             thread.start();
 
         // 所有任务完成则继续
@@ -262,8 +260,9 @@ public class YandeAPI {
         while(true) {
             if (total_cost > 90000)
                 message.at(message.getUser_id()).text("你的请求处理超时了，请稍候再试吧 |д`)").fall();
-            for (WorkThread thread : threads )
-                done += thread.getRestTask();
+            for (Thread thread : threads ) {
+                done += ((WorkThread) thread).getRestTask();
+            }
             if (done == 0)
                 break;
             else {
@@ -432,7 +431,8 @@ public class YandeAPI {
             instantSend(Message.build(inMessage), dragon, Arrays.toString(tags_info), page_nation);
             return null;
         }
-        new Thread(() -> {
+
+        Thread.ofVirtual().unstarted(() -> {
             // 构造消息请求体
             OutMessage outMessage = new OutMessage(inMessage);
             outMessage.setMessage("[CQ:at,qq=" + inMessage.getSender().getUser_id() + "] 开始检索 Yande 图片咯");
@@ -490,7 +490,7 @@ public class YandeAPI {
 //            instantSend(Message.build(inMessage), dragon, "/day", page_nation);
 //            return null;
 //        }
-        new Thread(() -> {
+        Thread.ofVirtual().unstarted(() -> {
             // 构造消息请求体
             OutMessage outMessage = new OutMessage(inMessage);
             outMessage.setMessage("[CQ:at,qq=" + inMessage.getSender().getUser_id() + "]" + ", 开始请求 " + target + " 的 Every " + type + " 精选图片");

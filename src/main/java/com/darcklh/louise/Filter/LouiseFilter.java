@@ -33,7 +33,7 @@ public class LouiseFilter implements Filter {
 
 //        String ip = request.getRemoteHost();
 
-        if (jsonObject.isEmpty()) {
+        if (!jsonObject.isEmpty()) {
             //排除心跳检测以及静态资源
             String post_type = jsonObject.getString("post_type");
             switch (post_type) {
