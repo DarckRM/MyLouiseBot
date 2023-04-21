@@ -14,10 +14,7 @@ import com.darcklh.louise.Model.R;
 import com.darcklh.louise.Model.ReplyException;
 import com.darcklh.louise.Service.BooruTagsService;
 import com.darcklh.louise.Service.UserService;
-import com.darcklh.louise.Utils.DragonflyUtils;
-import com.darcklh.louise.Utils.HttpProxy;
-import com.darcklh.louise.Utils.TaskDistributor;
-import com.darcklh.louise.Utils.WorkThread;
+import com.darcklh.louise.Utils.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -244,10 +241,9 @@ public class YandeAPI {
         // 写入缓存
         dragonflyUtils.setEx(fileOrigin + " " + final_tags + page_nation, replyImgList, 3600);
         List[] taskListPerThread = TaskDistributor.distributeTasks(taskList, 4);
-        ThreadFactory tf = Thread.ofVirtual().factory();
         List<Thread> threads = new ArrayList<>();
         for (int j = 0; j < taskListPerThread.length; j++) {
-            Thread workThread = tf.newThread(new WorkThread(taskListPerThread[j], j));
+            WorkThread workThread = new WorkThread(taskListPerThread[j], j);
             threads.add(workThread);
         }
 
@@ -257,20 +253,18 @@ public class YandeAPI {
         // 所有任务完成则继续
         int done = 0;
         int total_cost = 0;
-        while(true) {
-            if (total_cost > 90000)
-                message.at(message.getUser_id()).text("你的请求处理超时了，请稍候再试吧 |д`)").fall();
-            for (Thread thread : threads ) {
-                done += ((WorkThread) thread).getRestTask();
-            }
-            if (done == 0)
-                break;
-            else {
-                done = 0;
-                Thread.sleep(5000);
-                total_cost += 5000;
-            }
-        }
+
+        do {
+            done = 0;
+            if (total_cost >= 90000)
+                message.reply().text("你的请求处理超时了，请稍候再试吧 |д`)").fall();
+            for (Thread thread : threads)
+                if (!thread.isAlive())
+                    done++;
+            total_cost += 2000;
+            Thread.sleep(2000);
+        } while (done != threads.size());
+
         String announce = "支持中文搜索(原神)，请使用角色正确中文名\n如果想追加中文词条请使用!yande/help查看说明\n";
         message.node(Node.build()
                 .text(announce)

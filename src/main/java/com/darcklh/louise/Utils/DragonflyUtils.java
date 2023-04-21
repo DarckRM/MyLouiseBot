@@ -3,7 +3,9 @@ package com.darcklh.louise.Utils;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import kotlin.time.Duration;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
@@ -23,12 +25,30 @@ public class DragonflyUtils {
     JedisPool pool;
     Jedis jedis;
 
+    @Value("${spring.redis.database}")
+    private int database;
+    @Value("${spring.redis.host}")
+    private String host;
+    @Value("${spring.redis.port}")
+    private int port;
+    @Value("${spring.redis.password}")
+    private String password;
+    @Value("${spring.redis.timeout}")
+    private int timeout;
+    @Value("${spring.redis.jedis.pool.max-active}")
+    private int maxActive;
+    @Value("${spring.redis.jedis.pool.max-idle}")
+    private int maxIdle;
+    @Value("${spring.redis.jedis.pool.min-idle}")
+    private int minIdle;
+
+
     @PostConstruct
     public void init() {
         JedisPoolConfig config = new JedisPoolConfig();
-        config.setMaxIdle(8);
-        config.setMaxTotal(18);
-        pool = new JedisPool(config, "127.0.0.1", 6380, 2000, "akarinDragonfly");
+        config.setMaxIdle(maxIdle);
+        config.setMaxTotal(maxActive);
+        pool = new JedisPool(config, host, port, timeout, password);
     }
 
     /**
