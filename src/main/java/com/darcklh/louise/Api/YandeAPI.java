@@ -426,7 +426,7 @@ public class YandeAPI {
             return null;
         }
 
-        Thread.ofVirtual().unstarted(() -> {
+        new Thread(() -> {
             // 构造消息请求体
             OutMessage outMessage = new OutMessage(inMessage);
             outMessage.setMessage("[CQ:at,qq=" + inMessage.getSender().getUser_id() + "] 开始检索 Yande 图片咯");
@@ -484,7 +484,7 @@ public class YandeAPI {
 //            instantSend(Message.build(inMessage), dragon, "/day", page_nation);
 //            return null;
 //        }
-        Thread.ofVirtual().unstarted(() -> {
+        new Thread(() -> {
             // 构造消息请求体
             OutMessage outMessage = new OutMessage(inMessage);
             outMessage.setMessage("[CQ:at,qq=" + inMessage.getSender().getUser_id() + "]" + ", 开始请求 " + target + " 的 Every " + type + " 精选图片");
