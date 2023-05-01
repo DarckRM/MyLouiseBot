@@ -77,6 +77,9 @@ public class BootApplication {
             }
         }
 
+        // 初始化线程池
+        new LouiseThreadPool(4, 16);
+
 //        log.info("<--加载 MyLouise 系统缓存-->");
 //        List<FeatureInfo> featureInfos = featureInfoService.findBy();
 //        dragonflyUtils.setEx("feature-info", JSONObject.toJSONString(featureInfos), 3600);

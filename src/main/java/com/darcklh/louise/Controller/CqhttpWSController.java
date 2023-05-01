@@ -11,10 +11,7 @@ import com.darcklh.louise.Model.R;
 import com.darcklh.louise.Model.Saito.PluginInfo;
 import com.darcklh.louise.Service.FeatureInfoService;
 import com.darcklh.louise.Service.Impl.FeatureInfoImpl;
-import com.darcklh.louise.Utils.PluginManager;
-import com.darcklh.louise.Utils.PostDecoder;
-import com.darcklh.louise.Utils.PostEncoder;
-import com.darcklh.louise.Utils.UniqueGenerator;
+import com.darcklh.louise.Utils.*;
 import com.mysql.cj.protocol.x.Notice;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Call;
@@ -109,9 +106,9 @@ public class CqhttpWSController {
                 if (pattern.matcher(inMessage.getMessage()).find()) {
                     // 更新调用统计数据
                     cqhttpWSController.featureInfoService.addCount(entry.getValue().getFeature_id(), inMessage.getGroup_id(), inMessage.getUser_id());
-                    new Thread(() -> {
+                    LouiseThreadPool.execute(() -> {
                         entry.getValue().getPluginService().service(inMessage);
-                    }, entry.getValue().getName()).start();
+                    });
                 }
             }
         }

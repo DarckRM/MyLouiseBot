@@ -1,21 +1,21 @@
 package com.darcklh.louise;
 
+import com.darcklh.louise.Api.FileControlApi;
 import com.darcklh.louise.Utils.LouiseThreadPool;
+import com.darcklh.louise.Utils.OkHttpUtils;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.Response;
+import org.jsoup.Connection;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
+import java.util.Base64;
 
 @Slf4j
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class MyLouiseApplicationTests {
-    @Test
-    public void test() {
-        new LouiseThreadPool(8, 16);
-        for (int i = 0; i < 10; i++) {
-            LouiseThreadPool.execute(() -> {
-                log.info("wocao");
-            });
-        }
-
-    }
 }

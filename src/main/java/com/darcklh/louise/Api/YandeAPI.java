@@ -23,6 +23,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -426,7 +429,7 @@ public class YandeAPI {
             return null;
         }
 
-        new Thread(() -> {
+        LouiseThreadPool.execute(() -> {
             // 构造消息请求体
             OutMessage outMessage = new OutMessage(inMessage);
             outMessage.setMessage("[CQ:at,qq=" + inMessage.getSender().getUser_id() + "] 开始检索 Yande 图片咯");
@@ -441,11 +444,7 @@ public class YandeAPI {
 
             log.info("请求地址: " + uri.toString());
             // 使用代理请求 Yande
-            RestTemplate restTemplate = new RestTemplate();
-            // 借助代理请求
-            if (LouiseConfig.LOUISE_PROXY_PORT > 0)
-                restTemplate.setRequestFactory(new HttpProxy().getFactory(target + " API"));
-            String result = restTemplate.getForObject(uri.toString(), String.class);
+            String result = OkHttpUtils.builder().url(uri.toString()).get().async();
             JSONArray resultJsonArray = JSON.parseArray(result);
 
             assert resultJsonArray != null;
@@ -459,7 +458,7 @@ public class YandeAPI {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-        }).start();
+        });
         return null;
     }
 
@@ -484,7 +483,7 @@ public class YandeAPI {
 //            instantSend(Message.build(inMessage), dragon, "/day", page_nation);
 //            return null;
 //        }
-        new Thread(() -> {
+        LouiseThreadPool.execute(() -> {
             // 构造消息请求体
             OutMessage outMessage = new OutMessage(inMessage);
             outMessage.setMessage("[CQ:at,qq=" + inMessage.getSender().getUser_id() + "]" + ", 开始请求 " + target + " 的 Every " + type + " 精选图片");
@@ -511,7 +510,7 @@ public class YandeAPI {
                 e.printStackTrace();
             }
 
-        }).start();
+        });
         return null;
     }
 
