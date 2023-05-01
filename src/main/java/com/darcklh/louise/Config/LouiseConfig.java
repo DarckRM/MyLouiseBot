@@ -54,7 +54,7 @@ public class LouiseConfig {
         //获取系统配置项
         HashMap<String, String> configs = new HashMap<>();
 
-        for ( SysConfig sysConfig: sysConfigs ) {
+        for ( SysConfig sysConfig : sysConfigs ) {
             configs.put(sysConfig.getConfig_name(), sysConfig.getConfig_value());
         }
 

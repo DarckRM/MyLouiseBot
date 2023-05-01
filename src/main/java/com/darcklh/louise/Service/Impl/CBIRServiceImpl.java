@@ -85,8 +85,7 @@ public class CBIRServiceImpl implements CBIRService {
     private void startCompressWorkThread(List[] taskListPerThread, int taskList_size) throws InterruptedException {
         int i = 0;
         for (List singleTask : taskListPerThread) {
-            Thread workThread = new WorkThread(singleTask, i);
-            workThread.start();
+            WorkThread workThread = new WorkThread(singleTask, i);
             i++;
         }
         Thread.sleep(1500);
@@ -109,8 +108,7 @@ public class CBIRServiceImpl implements CBIRService {
 
     private void startCalcImageWorkThread(List[] taskListPerThread, int taskList_size) throws InterruptedException {
         for (int j = 0; j < taskListPerThread.length; j++) {
-            Thread workThread = new WorkThread(taskListPerThread[j], j);
-            workThread.start();
+            WorkThread workThread = new WorkThread(taskListPerThread[j], j);
         }
         Thread.sleep(1500);
         int status = 0;

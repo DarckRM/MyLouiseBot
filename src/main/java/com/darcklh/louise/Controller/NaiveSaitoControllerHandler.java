@@ -27,7 +27,7 @@ public class NaiveSaitoControllerHandler {
 
     @ExceptionHandler(value = InnerException.class)
     @ResponseBody
-    public JSONObject InnerExceptionHandler(InnerException sE) {
+    public JSONObject innerExceptionHandler(InnerException sE) {
 
         Result<String> result = new Result<>();
         result.setMsg(sE.getMessage());
@@ -39,9 +39,14 @@ public class NaiveSaitoControllerHandler {
     @ExceptionHandler(value = ReplyException.class)
     @ResponseBody
     public JSONObject handleReplyException(ReplyException e) {
-        if (e.getType() == 0)
-            return e.getReply();
-        r.sendMessage(e.getOutMessage());
+        switch (e.getType()) {
+            case 0 -> {
+                return e.getReply();
+            }
+            case 1 -> r.sendMessage(e.getOutMessage());
+            case 2 -> e.getMsg().send();
+            default -> log.error("未知的 replyException 类型");
+        }
         return null;
     }
 }

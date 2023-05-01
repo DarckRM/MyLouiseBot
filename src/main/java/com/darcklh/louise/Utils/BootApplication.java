@@ -14,6 +14,7 @@ import com.darcklh.louise.Model.Result;
 import com.darcklh.louise.Model.Saito.CronTask;
 import com.darcklh.louise.Model.Saito.FeatureInfo;
 import com.darcklh.louise.Model.Saito.PluginInfo;
+import com.darcklh.louise.Model.Saito.SysConfig;
 import com.darcklh.louise.Service.CronTaskService;
 import com.darcklh.louise.Service.FeatureInfoService;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -49,6 +51,9 @@ public class BootApplication {
     @Autowired
     FeatureInfoService featureInfoService;
 
+    @Autowired
+    DragonflyUtils dragonflyUtils;
+
     public static Date bootDate;
 
     @PostConstruct
@@ -57,10 +62,21 @@ public class BootApplication {
         // 获取系统启动时间
         bootDate = new Date();// 获取当前时间
 
-        // 尝试从缓存中获取配置
-        LouiseConfig.refreshConfig(sysConfigDao.selectList(null));
+        // 初始化线程池
+        new LouiseThreadPool(8, 16);
 
-        //将配置写入 DragonFly 缓存
+        // 尝试从缓存中获取配置
+        log.info("<--加载 MyLouise 配置信息-->");
+        List<SysConfig> list = JSONObject.parseArray(dragonflyUtils.get("sys-config"), SysConfig.class);
+        if (list != null) {
+            log.info("已从缓存中获取 " + list.size() + " 条系统配置");
+            LouiseConfig.refreshConfig(list);
+        }
+        else {
+            list = sysConfigDao.selectList(null);
+            dragonflyUtils.set("sys-config", JSONObject.toJSONString(list));
+            LouiseConfig.refreshConfig(list);
+        }
 
         log.info("<--加载 MyLouise 插件-->");
         Result<PluginInfo> result = pluginInfoController.loadPlugins();
@@ -77,12 +93,17 @@ public class BootApplication {
             }
         }
 
-        // 初始化线程池
-        new LouiseThreadPool(4, 16);
-
-//        log.info("<--加载 MyLouise 系统缓存-->");
-//        List<FeatureInfo> featureInfos = featureInfoService.findBy();
-//        dragonflyUtils.setEx("feature-info", JSONObject.toJSONString(featureInfos), 3600);
+        //将配置写入 DragonFly 缓存
+        log.info("<--加载 MyLouise 功能信息-->");
+        List<FeatureInfo> featureInfos = featureInfoService.findBy();
+        for (FeatureInfo info : featureInfos) {
+            String cmd = info.getFeature_cmd().split(" ")[0];
+            if (cmd.contains("/"))
+                cmd = cmd.substring(0, cmd.indexOf("/") + 1) + "{%";
+            else
+                cmd += " %";
+            dragonflyUtils.set(cmd, info);
+        }
 
         try {
             Message msg = Message.build();

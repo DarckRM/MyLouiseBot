@@ -1,6 +1,7 @@
 package com.darcklh.louise.Model;
 
 import com.alibaba.fastjson.JSONObject;
+import com.darcklh.louise.Model.Messages.Message;
 import com.darcklh.louise.Model.Messages.OutMessage;
 import lombok.Data;
 
@@ -16,6 +17,8 @@ public class ReplyException extends RuntimeException {
      * 指定抛出给QQ端的异常消息 outMessage
      */
     private OutMessage outMessage;
+
+    private Message msg;
 
     /**
      * 快速返回的异常消息
@@ -36,6 +39,15 @@ public class ReplyException extends RuntimeException {
     public ReplyException(String reply) {
         this.type = 0;
         this.reply.put("reply", reply);
+    }
+
+    /**
+     *
+     * @param message
+     */
+    public ReplyException(Message message) {
+        this.type = 2;
+        this.msg = message;
     }
 
     /**
