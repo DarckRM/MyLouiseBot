@@ -24,7 +24,7 @@ public class UserController {
     public Result<UserRole> findAll() {
         Result<UserRole> result = new Result<>();
         List<UserRole> userList = userService.findAll();
-        if (userList.size() == 0) {
+        if (userList.isEmpty()) {
             result.setCode(202);
             return result;
         }

@@ -16,7 +16,9 @@ import java.io.FileReader;
 import java.io.IOException;
 
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -30,9 +32,6 @@ public class SaitoController {
 
     @Autowired
     SysUserService sysUserService;
-
-    @Autowired
-    PluginManager pluginManager;
 
     static private boolean output_log = true;
     private static Map<String, Integer> lengthMap = new ConcurrentHashMap<>();
@@ -66,33 +65,22 @@ public class SaitoController {
      */
     @GetMapping("saito/output_log/{client_name}")
     public void outputLog(@PathVariable String client_name) {
+        LinkedList<String> output = new LinkedList<>();
         output_log = true;
         lengthMap.put(client_name, 1);//默认从第一行开始
         //获取日志信息
         new Thread(() -> {
             log.info("日志输出任务开始");
+            //日志文件路径，获取最新的
+            String filePath = "logs/mylouise.log";
             while(output_log) {
-                boolean first = true;
                 BufferedReader reader = null;
+                String line;
                 try {
-                    //日志文件路径，获取最新的
-                    String filePath = "logs/mylouise.log";
                     //字符流
                     reader = new BufferedReader(new FileReader(filePath));
-                    Object[] lines = reader.lines().toArray();
-
-                    //只取从上次之后产生的日志
-                    Object[] copyOfRange = Arrays.copyOfRange(lines, lengthMap.get(client_name), lines.length);
-
-                    //对日志进行着色，更加美观  PS：注意，这里要根据日志生成规则来操作
-                    for (int i = 0; i < copyOfRange.length; i++) {
-                        String line = (String) copyOfRange[i];
-                        //先转义
-                        line = line.replaceAll("&", "&amp;")
-                                .replaceAll("<", "&lt;")
-                                .replaceAll(">", "&gt;")
-                                .replaceAll("\"", "&quot;");
-
+                    while ((line = reader.readLine()) != null) {
+                        //对日志进行着色，更加美观  PS：注意，这里要根据日志生成规则来操作
                         //处理等级
                         line = line.replace("DEBUG", "<span style='color: blue;'>DEBUG</span>");
                         line = line.replace("INFO", "<span style='color: green;'>INFO</span>");
@@ -104,30 +92,20 @@ public class SaitoController {
                         if (split.length >= 2) {
                             String[] split1 = split[1].split("-");
                             if (split1.length >= 2) {
-                                line = split[0] + "]" + "<span style='color: #298a8a;'>" + split1[0] + "</span>" + "-" + split1[1];
+                                line = split[0] + "]" + "<span style='color: #298a8a;'>" + split1[0] + "</span>" + "-";
+                                for (int i = 1; i < split1.length; i++)
+                                    line += split1[i] + "-";
                             }
                         }
-
-                        copyOfRange[i] = line;
+                        // 队列中写入新行
+                        output.addLast(line + "<br/>");
+                        if (output.size() > 200)
+                            output.removeFirst();
                     }
-
-                    //存储最新一行开始
-                    lengthMap.put(client_name, lines.length);
-
-                    //第一次如果太大，截取最新的200行就够了，避免传输的数据太大
-                    if(first && copyOfRange.length > 200){
-                        copyOfRange = Arrays.copyOfRange(copyOfRange, copyOfRange.length - 200, copyOfRange.length);
-                        first = false;
-                    }
-                    for (Object o : copyOfRange) {
-                        o += "<br/>";
-                    }
-                    String result = copyOfRange.toString();
                     JSONObject jsonObject = new JSONObject();
-                    jsonObject.put("result", result);
+                    jsonObject.put("result", output);
                     //发送
                     WebSocketService.sendMessage(client_name, jsonObject.toString());
-
                     //休眠一秒
                     Thread.sleep(1000);
                 } catch (Exception e) {
