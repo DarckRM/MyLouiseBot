@@ -119,7 +119,9 @@ public class OkHttpUtils {
      * @return
      */
     public static OkHttpUtils builder() {
-        return new OkHttpUtils();
+        if (LouiseConfig.LOUISE_PROXY_PORT > 0)
+            return new OkHttpUtils(new Proxy(Proxy.Type.HTTP, new InetSocketAddress(LouiseConfig.LOUISE_PROXY, LouiseConfig.LOUISE_PROXY_PORT)));
+        else return new OkHttpUtils();
     }
 
     /**

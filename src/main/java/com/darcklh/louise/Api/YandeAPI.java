@@ -23,6 +23,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -65,6 +68,7 @@ public class YandeAPI {
     public JSONObject addBooruTag(@RequestBody InMessage inMessage) {
 
         JSONObject reply = new JSONObject();
+        Message msg = Message.build(inMessage);
         long user_id = inMessage.getUser_id();
         // 解析命令
         String message = inMessage.getMessage();
@@ -75,22 +79,29 @@ public class YandeAPI {
 
         // 合法性校验
         if (tags.length <= 1)
-            throw new ReplyException("[CQ:at,qq=" + user_id + "]你没有给出需要添加的词条哦 |д`)");
+            throw new ReplyException(msg.reply().text("你没有给出需要添加的词条哦 |д`)"));
         if (tags.length > 6)
-            throw new ReplyException("[CQ:at,qq=" + user_id + "]太多词条别名啦，一次只能添加4个别名 (>д<)");
-
+            throw new ReplyException(msg.reply().text("太多词条别名啦，一次只能添加4个别名 (>д<)"));
 
         BooruTags booruTag = new BooruTags();
-
-        booruTag.setCn_name(tags[1]);
-        List<BooruTags> booruTags = booruTagsService.findBy(booruTag);
         // 写入创建人 QQ
         booruTag.setInfo(String.valueOf(user_id));
+        if (tags[1].startsWith("--")) {
+            booruTag.setOrigin_name(tags[1].substring(2));
+            booruTag.setCn_name(tags[2]);
+            if(booruTagsService.save(booruTag)) {
+                msg.reply().text("写入标签成功 (´∀`)").send();
+            } else msg.reply().text("写入失败了...").send();
+            return null;
+        } else {
+            booruTag.setCn_name(tags[1]);
+        }
+        List<BooruTags> booruTags = booruTagsService.findBy(booruTag);
 
         // 判断是否有别名
         if (tags.length == 2) {
 
-            if (booruTags.size() != 0)
+            if (!booruTags.isEmpty())
                 throw new ReplyException("[CQ:at,qq=" + user_id + "]已经存在“" + tags[1] + "”这个标签了 (>д<)");
             // 没有词条则写入新词条
             if(booruTagsService.save(booruTag)) {
@@ -103,8 +114,9 @@ public class YandeAPI {
             // 取出查询到的记录，复写 cn_name 字段并追加到数据库
             int index = 2;
 
-            if (booruTags.size() != 0) {
+            if (!booruTags.isEmpty()) {
                 booruTag = booruTags.get(0);
+                booruTag.setTag_id(null);
                 booruTag.setAlter_name(booruTag.getCn_name());
                 // 写入创建人 QQ
                 booruTag.setInfo(String.valueOf(user_id));
@@ -149,7 +161,7 @@ public class YandeAPI {
      * 和 Yande 放在一起处理
      */
     @RequestMapping("louise/konachan/tags")
-    public JSONObject KonachanTags(@RequestBody InMessage inMessage) {
+    public JSONObject konachanTags(@RequestBody InMessage inMessage) {
         // 处理命令前缀
         String[] msg;
         msg = inMessage.getMessage().split(" ");
@@ -165,7 +177,7 @@ public class YandeAPI {
      * @return
      */
     @RequestMapping("louise/yande/tags")
-    public JSONObject YandeTags(@RequestBody InMessage inMessage) {
+    public JSONObject yandeTags(@RequestBody InMessage inMessage) {
 
         // 处理命令前缀
         String[] msg;
@@ -182,7 +194,7 @@ public class YandeAPI {
      * @return
      */
     @RequestMapping("louise/konachan/{type}")
-    public JSONObject KonachanPic(@RequestBody InMessage inMessage, @PathVariable String type) {
+    public JSONObject konachanPic(@RequestBody InMessage inMessage, @PathVariable String type) {
         return requestPopular("https://konachan.com/post/popular_by_", "Konachan", type, inMessage);
     }
 
@@ -190,17 +202,17 @@ public class YandeAPI {
      *  获取 Yandere 每日图片
      */
     @RequestMapping("louise/yande/{type}")
-    public JSONObject YandePic(@RequestBody InMessage inMessage, @PathVariable String type) {
+    public JSONObject yandePic(@RequestBody InMessage inMessage, @PathVariable String type) {
         return requestPopular("https://yande.re/post/popular_by_", "Yande", type, inMessage);
     }
 
     @RequestMapping("louise/konachan")
-    public JSONObject KonachanSearch(@RequestBody InMessage inMessage) {
+    public JSONObject konachanSearch(@RequestBody InMessage inMessage) {
         return requestBooru("https://konachan.com/post.json?tags=", "Konachan", inMessage);
     }
 
     @RequestMapping("louise/yande")
-    public JSONObject YandeSearch(@RequestBody InMessage inMessage) {
+    public JSONObject yandeSearch(@RequestBody InMessage inMessage) {
         return requestBooru("https://yande.re/post.json?tags=", "Yande", inMessage);
     }
 
@@ -226,9 +238,8 @@ public class YandeAPI {
             JSONObject imgJsonObj = (JSONObject) object;
             String[] tagList = imgJsonObj.getString("tags").split(" ");
             // 如果是群聊跳过成人内容
-            if (outMessage.getGroup_id() >= 0)
-                if (isNSFW(tagList))
-                    continue;
+            if (outMessage.getGroup_id() >= 0 && (isNSFW(tagList)))
+                continue;
 
             String fileName = imgJsonObj.getString("md5") + "." + imgJsonObj.getString("file_ext");
             image = LouiseConfig.BOT_LOUISE_CACHE_IMAGE + fileOrigin + "/" + fileName;
@@ -241,29 +252,25 @@ public class YandeAPI {
         // 写入缓存
         dragonflyUtils.setEx(fileOrigin + " " + final_tags + page_nation, replyImgList, 3600);
         List[] taskListPerThread = TaskDistributor.distributeTasks(taskList, 4);
-        List<Thread> threads = new ArrayList<>();
+        List<WorkThread> workThreads = new ArrayList<>();
         for (int j = 0; j < taskListPerThread.length; j++) {
             WorkThread workThread = new WorkThread(taskListPerThread[j], j);
-            threads.add(workThread);
+            workThreads.add(workThread);
+            LouiseThreadPool.execute(workThread::run);
         }
-
-        for (Thread thread : threads)
-            thread.start();
-
         // 所有任务完成则继续
         int done = 0;
         int total_cost = 0;
-
         do {
             done = 0;
             if (total_cost >= 90000)
                 message.reply().text("你的请求处理超时了，请稍候再试吧 |д`)").fall();
-            for (Thread thread : threads)
-                if (!thread.isAlive())
+            for (WorkThread thread : workThreads)
+                if (thread.getRestTask() == 0)
                     done++;
             total_cost += 2000;
             Thread.sleep(2000);
-        } while (done != threads.size());
+        } while (done != workThreads.size());
 
         String announce = "支持中文搜索(原神)，请使用角色正确中文名\n如果想追加中文词条请使用!yande/help查看说明\n";
         message.node(Node.build()
@@ -290,23 +297,11 @@ public class YandeAPI {
 
     private boolean isNSFW(String[] tagList) {
         for ( String tag : tagList ) {
-            switch (tag) {
-                case "naked":
-                case "nipples":
-                case "sex":
-                case "anus":
-                case "breasts":
-                case "pussy":
-                case "naked_cape":
-                case "no_bra":
-                case "nopan":
-                case "bikini":
-                case "undressing":
-                case "pantsu":
-                case "monochrome":
-                case "bondage":
-                    return true;
-            }
+            return switch (tag) {
+                case "naked", "nipples", "sex", "anus", "breasts", "pussy", "naked_cape", "no_bra", "nopan", "bikini", "undressing", "pantsu", "monochrome", "bondage" ->
+                        true;
+                default -> false;
+            };
         }
         return false;
     }
@@ -374,7 +369,7 @@ public class YandeAPI {
                 booruTags.setCn_name(tags[index]);
                 List<BooruTags> booru_list = booruTagsService.findByAlter(booruTags);
 
-                if (booru_list.size() != 0) {
+                if (!booru_list.isEmpty()) {
 
                     // 如果返回了多个结果 优先考虑创建者的 QQ 匹配
                     if (booru_list.size() > 1)
@@ -426,7 +421,7 @@ public class YandeAPI {
             return null;
         }
 
-        new Thread(() -> {
+        LouiseThreadPool.execute(() -> {
             // 构造消息请求体
             OutMessage outMessage = new OutMessage(inMessage);
             outMessage.setMessage("[CQ:at,qq=" + inMessage.getSender().getUser_id() + "] 开始检索 Yande 图片咯");
@@ -441,15 +436,11 @@ public class YandeAPI {
 
             log.info("请求地址: " + uri.toString());
             // 使用代理请求 Yande
-            RestTemplate restTemplate = new RestTemplate();
-            // 借助代理请求
-            if (LouiseConfig.LOUISE_PROXY_PORT > 0)
-                restTemplate.setRequestFactory(new HttpProxy().getFactory(target + " API"));
-            String result = restTemplate.getForObject(uri.toString(), String.class);
+            String result = OkHttpUtils.builder().url(uri.toString()).get().async();
             JSONArray resultJsonArray = JSON.parseArray(result);
 
             assert resultJsonArray != null;
-            if(resultJsonArray.size() == 0) {
+            if(resultJsonArray.isEmpty()) {
                 outMessage.setMessage("[CQ:at,qq=" + inMessage.getSender().getUser_id() + "]" + "没有找到你想要的结果呢，请检查参数是否正确，或者发送!yande/help获取帮助 |д`)");
                 r.sendMessage(outMessage);
                 return;
@@ -459,7 +450,7 @@ public class YandeAPI {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-        }).start();
+        });
         return null;
     }
 
@@ -476,15 +467,8 @@ public class YandeAPI {
         uri += type + ".json";
 
         String finalUri = uri;
-//        // 尝试从缓存获取
-//        ArrayList<String> dragon = dragonflyUtils.get(target + " /day", ArrayList.class);
-//        if (dragon != null) {
-//            log.info("已找到 Dragonfly 缓存");
-//            String page_nation =  "1 页/ 10 条";
-//            instantSend(Message.build(inMessage), dragon, "/day", page_nation);
-//            return null;
-//        }
-        new Thread(() -> {
+        // 尝试从缓存获取
+        LouiseThreadPool.execute(() -> {
             // 构造消息请求体
             OutMessage outMessage = new OutMessage(inMessage);
             outMessage.setMessage("[CQ:at,qq=" + inMessage.getSender().getUser_id() + "]" + ", 开始请求 " + target + " 的 Every " + type + " 精选图片");
@@ -500,7 +484,7 @@ public class YandeAPI {
             JSONArray resultJsonArray = JSON.parseArray(result);
 
             assert resultJsonArray != null;
-            if(resultJsonArray.size() == 0) {
+            if(resultJsonArray.isEmpty()) {
                 outMessage.setMessage("[CQ:at,qq=" + inMessage.getSender().getUser_id() + "]" + "没有找到你想要的结果呢");
                 r.sendMessage(outMessage);
                 return;
@@ -511,7 +495,7 @@ public class YandeAPI {
                 e.printStackTrace();
             }
 
-        }).start();
+        });
         return null;
     }
 
@@ -536,7 +520,7 @@ public class YandeAPI {
 
         assert resultJsonArray != null;
 
-        if(resultJsonArray.size() == 0) {
+        if(resultJsonArray.isEmpty()) {
             returnJson.put("reply", "没有找到你想要的结果呢");
             return returnJson;
         }
@@ -547,13 +531,13 @@ public class YandeAPI {
             Integer count = tagObj.getInteger("count");
             Integer typeId = tagObj.getInteger("type");
 
-            String type = "";
-            switch (typeId) {
-                case 0: type = "通常"; break;
-                case 1: type = "作者"; break;
-                case 3: type = "版权"; break;
-                case 4: type = "角色"; break;
-            }
+            String type = switch (typeId) {
+                case 0 -> "通常";
+                case 1 -> "作者";
+                case 3 -> "版权";
+                case 4 -> "角色";
+                default -> "";
+            };
             tagList.append(name).append(" 类型: ").append(type).append(" 有 ").append(count).append(" 张 \r\n");
         }
 

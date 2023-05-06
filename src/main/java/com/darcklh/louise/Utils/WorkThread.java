@@ -11,7 +11,7 @@ import java.util.List;
 
 @Slf4j
 @Data
-public class WorkThread extends Thread {
+public class WorkThread {
 
     // 本线程待执行的任务列表，你也可以指为任务索引的起始值
     private List<MultiTaskService> taskList = null;

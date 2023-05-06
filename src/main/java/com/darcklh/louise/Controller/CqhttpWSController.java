@@ -7,14 +7,12 @@ import com.darcklh.louise.Model.GoCqhttp.NoticePost;
 import com.darcklh.louise.Model.GoCqhttp.RequestPost;
 import com.darcklh.louise.Model.Louise.Group;
 import com.darcklh.louise.Model.Messages.InMessage;
+import com.darcklh.louise.Model.Messages.Message;
 import com.darcklh.louise.Model.R;
 import com.darcklh.louise.Model.Saito.PluginInfo;
 import com.darcklh.louise.Service.FeatureInfoService;
 import com.darcklh.louise.Service.Impl.FeatureInfoImpl;
-import com.darcklh.louise.Utils.PluginManager;
-import com.darcklh.louise.Utils.PostDecoder;
-import com.darcklh.louise.Utils.PostEncoder;
-import com.darcklh.louise.Utils.UniqueGenerator;
+import com.darcklh.louise.Utils.*;
 import com.mysql.cj.protocol.x.Notice;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Call;
@@ -109,9 +107,9 @@ public class CqhttpWSController {
                 if (pattern.matcher(inMessage.getMessage()).find()) {
                     // 更新调用统计数据
                     cqhttpWSController.featureInfoService.addCount(entry.getValue().getFeature_id(), inMessage.getGroup_id(), inMessage.getUser_id());
-                    new Thread(() -> {
+                    LouiseThreadPool.execute(() -> {
                         entry.getValue().getPluginService().service(inMessage);
-                    }, entry.getValue().getName()).start();
+                    });
                 }
             }
         }
@@ -137,18 +135,17 @@ public class CqhttpWSController {
         JSONObject jsonObject = new JSONObject();
         R r = new R();
         switch (post.getRequest_type()) {
-            case friend: {
+            case friend -> {
                 // 允许添加好友并且回复一些基础语句
                 jsonObject.put("flag", post.getFlag());
                 jsonObject.put("approve", true);
                 r.requestAPI("set_friend_add_request", jsonObject);
                 // 添加好友后补充发送消息
-                jsonObject.put("user_id", post.getUser_id());
-                jsonObject.put("message", "露易丝已经成功添加好友，有什么问题的话可以在私聊里发送!help哦");
-                r.requestAPI("send_msg", jsonObject);
+                Message message = Message.build();
+                message.setUser_id(post.getUser_id());
+                message.text("露易丝已经成功添加好友，有什么问题的话可以发送!help哦").send();
             }
-            case group: {
-                // TODO 暂不处理加群请求
+            case group -> {
                 if (post.getSub_type() == RequestPost.SubType.add)
                     return;
                 // 允许添加群组并且回复一些基础语句
@@ -160,21 +157,20 @@ public class CqhttpWSController {
                 jsonObject.put("message", "各位好，这里是露易丝bot，请管理员发送!group_join注册群聊哦，获取其它帮助请发送!help");
                 r.requestAPI("send_msg", jsonObject);
             }
-            default:
         }
     }
 
-    public static void startWatch(Long user_id) {
+    public static void startWatch(Long userId) {
         // 进入监听模式
-        accounts.add(user_id);
+        accounts.add(userId);
         listenerCounts++;
     }
 
-    public static void stopWatch(Long user_id) {
+    public static void stopWatch(Long userId) {
         // 监听计数器减少，移除多余消息
         listenerCounts--;
-        messageMap.remove(user_id);
-        accounts.remove(user_id);
+        messageMap.remove(userId);
+        accounts.remove(userId);
     }
 
     /**
