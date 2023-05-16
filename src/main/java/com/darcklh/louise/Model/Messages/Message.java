@@ -213,6 +213,12 @@ public class Message {
         this.clear();
     }
 
+    public void fall(String text) {
+        R r = new R();
+        r.fall(this, text);
+        this.clear();
+    }
+
     public interface MessageCallBack {
         void call(JSONObject result);
     }

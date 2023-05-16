@@ -3,6 +3,7 @@ package com.darcklh.louise.Utils;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.darcklh.louise.Model.VO.FeatureInfoMin;
 import kotlin.time.Duration;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -125,6 +126,9 @@ public class DragonflyUtils {
     }
 
     public boolean set(String key, Object object) {
+        if ( object instanceof JSONArray array) {
+            return set(key, array.toJSONString()) != null;
+        }
         return set(key, JSONObject.toJSONString(object)) != null;
     }
 

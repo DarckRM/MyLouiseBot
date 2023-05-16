@@ -1,19 +1,25 @@
 package com.darcklh.louise.Service.Impl;
 
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import com.darcklh.louise.Mapper.FeatureInfoDao;
 import com.darcklh.louise.Mapper.FeatureStaticDao;
+import com.darcklh.louise.Model.Louise.User;
 import com.darcklh.louise.Model.ReplyException;
 import com.darcklh.louise.Model.Saito.FeatureInfo;
 import com.darcklh.louise.Model.Saito.FeatureStatic;
 import com.darcklh.louise.Model.VO.FeatureInfoMin;
 import com.darcklh.louise.Service.FeatureInfoService;
+import com.darcklh.louise.Utils.DragonflyUtils;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -31,6 +37,20 @@ public class FeatureInfoImpl implements FeatureInfoService {
 
     @Autowired
     FeatureStaticDao featureStaticDao;
+
+    @Autowired
+    DragonflyUtils dragonflyUtils;
+
+    private final String featureMinKeyRoleId = "model:feature_min:role_id:";
+
+    private boolean isUpdate = true;
+    public boolean isUpdate() {
+        return this.isUpdate;
+    }
+
+    public void update(boolean status) {
+        this.isUpdate = status;
+    }
 
     @Override
     public List<FeatureInfo> findBy() {
@@ -84,8 +104,36 @@ public class FeatureInfoImpl implements FeatureInfoService {
     }
 
     @Override
-    public List<FeatureInfoMin> findWithRoleId(Integer role_id) {
-        return featureInfoDao.findWithRoleId(role_id);
+    public List<FeatureInfoMin> findWithRoleId(Integer roleId) {
+        // 如果数据未更新则从缓存中取值
+        JSONArray array;
+        List<FeatureInfoMin> mins = new ArrayList<>();
+        // 缓存的值是最新的
+        if (isUpdate()) {
+            array = dragonflyUtils.get(featureMinKeyRoleId + roleId, JSONArray.class);
+            // 如果缓存中没有值则写入
+            if (array == null) {
+                array = new JSONArray();
+                mins = featureInfoDao.findWithRoleId(roleId);
+                array.addAll(mins);
+                dragonflyUtils.set(featureMinKeyRoleId + roleId, array);
+            } else {
+                for ( Object min : array)
+                    mins.add(JSONObject.parseObject(min.toString(), FeatureInfoMin.class));
+                log.debug("用户命中缓存");
+            }
+        } else {
+            array = new JSONArray();
+            mins = featureInfoDao.findWithRoleId(roleId);
+            array.addAll(mins);
+            dragonflyUtils.set(featureMinKeyRoleId + roleId, array);
+        }
+        return mins;
+    }
+
+    @Override
+    public List<FeatureInfoMin> findAllMins() {
+        return featureInfoDao.findAllMins();
     }
 
     @Override

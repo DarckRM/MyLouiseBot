@@ -168,6 +168,14 @@ public class R {
         return this.requestAPI("send_msg", message);
     }
 
+    public void fall(Message message, String text) {
+        if (!testConnWithBot())
+            throw new InnerException(message.getUser_id(), "无法连接 BOT， 请确认 Go-Cqhttp 正在运行", "");
+        if (message.getMessages().size() != 0)
+            this.requestAPI("send_group_forward_msg", message);
+        this.requestAPI("send_msg", message);
+        throw new InnerException(message.getUser_id(), text, "");
+    }
     public void fall(Message message) {
         if (!testConnWithBot())
             throw new InnerException(message.getUser_id(), "无法连接 BOT， 请确认 Go-Cqhttp 正在运行", "");

@@ -51,7 +51,6 @@ public class LouiseHandler implements HandlerInterceptor {
 
     @Autowired
     PluginInfoService pluginInfoService;
-
     @Override
     public boolean preHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull Object o) throws Exception {
 
@@ -63,10 +62,12 @@ public class LouiseHandler implements HandlerInterceptor {
         logger.debug("拦截器请求Body: {}", body);
 
         InMessage inMessage = JSON.parseObject(body).toJavaObject(InMessage.class);
-        howMuchCost("转换消息体耗时 {} 毫秒", stopWatch);
+
         long groupId = inMessage.getGroup_id();
+        String nickname = inMessage.getSender().getNickname();
         long userId = inMessage.getUser_id();
         String message = inMessage.getMessage();
+        String userInfo = nickname + "(" + userId + ")";
 
         //对command预处理
         String[] commands = message.split(" ");
@@ -80,13 +81,15 @@ public class LouiseHandler implements HandlerInterceptor {
             command += " %";
 
         boolean tag = false;
-        howMuchCost("命令预处理耗时 {} 毫秒", stopWatch);
+
+        String featureKey = "model:feature:cmd:";
+
         // 获取请求的功能对象
-        FeatureInfo featureInfo = dragonflyUtils.get(command, FeatureInfo.class);
+        FeatureInfo featureInfo = dragonflyUtils.get(featureKey + command, FeatureInfo.class);
         if (featureInfo == null) {
             featureInfo = featureInfoService.findWithFeatureCmd(command, userId);
         }
-        howMuchCost("请求功能对象耗时 {} 毫秒", stopWatch);
+
         //判断功能是否启用
         if (featureInfo.getIs_enabled() != 1) {
             throw new ReplyException("功能<" + featureInfo.getFeature_name() + ">未启用");
@@ -99,7 +102,7 @@ public class LouiseHandler implements HandlerInterceptor {
             return false;
         }
 
-        logger.info("用户 {} 请求 {} at {}", userId, featureInfo.getFeature_name(), new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date().getTime()));
+        logger.info("用户 {} 请求 {} at {}", userInfo, featureInfo.getFeature_name(), new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date().getTime()));
         // 管理员和 Bot 的命令将不受限制
         if (userId == Long.parseLong(LouiseConfig.BOT_ACCOUNT)) {
             featureInfoService.addCount(featureInfo.getFeature_id(), groupId, userId);
@@ -133,22 +136,21 @@ public class LouiseHandler implements HandlerInterceptor {
             featureInfoService.addCount(featureInfo.getFeature_id(), groupId, userId);
             return true;
         }
-
-        int isAvailable = userService.isUserAvailable(userId);
-
+        User user = userService.selectById(userId);
         // 判断用户是否存在并启用
-        if (isAvailable == 0) {
-            logger.info("未登记的用户 {}", userId);
+        if (user == null) {
+            logger.info("未登记的用户 {}", userInfo);
             throw new ReplyException("请在群内发送!join以启用你的使用权限");
-        } else if (isAvailable == -1) {
-            logger.info("未启用的用户 {}", userId);
+        } else if (user.getIsEnabled() != 1) {
+            logger.info("未启用的用户 {}", userInfo);
             throw new ReplyException("你的权限已被暂时禁用");
         }
 
         // 判断群聊还是私聊
         if (inMessage.getGroup_id() != -1) {
-            if (groupService.isGroupExist(groupId)) {
-                if (!groupService.isGroupEnabled(groupId)) {
+            Group group = groupService.selectById(groupId);
+            if (group != null) {
+                if (group.getIs_enabled() != 1) {
                     logger.info("未启用的群组: {}", groupId);
                     throw new ReplyException("主人不准露易丝在这个群里说话哦");
                 }
@@ -156,8 +158,6 @@ public class LouiseHandler implements HandlerInterceptor {
                 logger.info("未注册的群组: {}", groupId);
                 throw new ReplyException("群聊还没有在露易丝中注册哦");
             }
-
-            Group group = groupService.selectById(groupId);
 
             List<FeatureInfoMin> featureInfoMins = featureInfoService.findWithRoleId(group.getRole_id());
             logger.debug("群聊允许的功能列表: {}", formatList(featureInfoMins));
@@ -172,7 +172,6 @@ public class LouiseHandler implements HandlerInterceptor {
         }
 
         tag = false;
-        User user = userService.selectById(userId);
 
         List<FeatureInfoMin> featureInfoMins = featureInfoService.findWithRoleId(user.getRole_id());
         logger.debug("用户允许的功能列表: {}", formatList(featureInfoMins));
@@ -194,7 +193,7 @@ public class LouiseHandler implements HandlerInterceptor {
         // 更新调用统计数据
         featureInfoService.addCount(featureInfo.getFeature_id(), groupId, userId);
 
-        logger.info("功能 {} 消耗用户 {} CREDIT {}", featureInfo.getFeature_name(), userId, featureInfo.getCredit_cost());
+        logger.info("功能 {} 消耗用户 {} CREDIT {}", featureInfo.getFeature_name(), userInfo, featureInfo.getCredit_cost());
         howMuchCost("解析此次请求耗时 {} 毫秒", stopWatch);
         return true;
     }

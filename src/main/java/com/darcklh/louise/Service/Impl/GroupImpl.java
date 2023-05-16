@@ -8,6 +8,8 @@ import com.darcklh.louise.Model.Messages.OutMessage;
 import com.darcklh.louise.Model.R;
 import com.darcklh.louise.Model.VO.GroupRole;
 import com.darcklh.louise.Service.GroupService;
+import com.darcklh.louise.Utils.DragonflyUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -19,13 +21,27 @@ import java.util.List;
  * @Description
  */
 @Service
+@Slf4j
 public class GroupImpl implements GroupService {
 
+    @Autowired
+    DragonflyUtils dragonflyUtils;
     @Autowired
     GroupDao groupDao;
 
     @Autowired
     R r;
+
+    private boolean isUpdate = true;
+    private final String groupKey = "model:group:id:";
+
+    public boolean isUpdate() {
+        return this.isUpdate;
+    }
+
+    public void update(boolean status) {
+        this.isUpdate = status;
+    }
 
     public List<GroupRole> findGroupRoleBy() {
         return groupDao.findBy();
@@ -42,7 +58,23 @@ public class GroupImpl implements GroupService {
     }
 
     public Group selectById(long group_id) {
-        return groupDao.selectById(group_id);
+        // 如果数据未更新则从缓存中取值
+        Group group;
+        // 缓存的值是最新的
+        if (isUpdate()) {
+            group = dragonflyUtils.get(groupKey + group_id, Group.class);
+            // 如果缓存中没有值则写入
+            if (group == null) {
+                group = groupDao.selectById(group_id);
+                dragonflyUtils.set(groupKey + group_id, group);
+            } else {
+                log.debug("群组命中缓存");
+            }
+        } else {
+            group = groupDao.selectById(group_id);
+            dragonflyUtils.set(groupKey + group_id, group);
+        }
+        return group;
     }
 
     public String editBy(Group group) {
@@ -82,6 +114,7 @@ public class GroupImpl implements GroupService {
 
         if (groupDao.updateById(group) == 1) {
             reply = "更新群组 " + group.getGroup_id() + " 成功";
+            dragonflyUtils.set(groupKey + group.getGroup_id(), group);
         }
         return reply;
     }
@@ -157,5 +190,23 @@ public class GroupImpl implements GroupService {
         if (groupDao.isGroupEnabled(group_id) <= 0)
             return false;
         return true;
+    }
+
+    @Override
+    public int isGroupAvailable(long groupId) {
+        Group group = groupDao.selectById(groupId);
+        if (group == null)
+            return 0;
+        else if (group.getIs_enabled() <= 0)
+            return -1;
+        return 1;
+    }
+
+    @Override
+    public Group getGroupAvailable(long groupId) {
+        Group group = groupDao.selectById(groupId);
+        if (group == null)
+            log.info("群组 {} 不存在", groupId);
+        return group;
     }
 }

@@ -22,6 +22,9 @@ public interface FeatureInfoDao extends BaseMapper<FeatureInfo> {
     @Select("SELECT t2.feature_id, t2.feature_name FROM t_role_feature t1 LEFT JOIN t_feature_info t2 ON t2.feature_id = t1.feature_id WHERE role_id = #{role_id}")
     public List<FeatureInfoMin> findWithRoleId(Integer role_id);
 
+    @Select("SELECT t2.feature_id, t2.feature_name FROM t_role_feature t1 LEFT JOIN t_feature_info t2 ON t2.feature_id = t1.feature_id")
+    public List<FeatureInfoMin> findAllMins();
+
     @Select("SELECT * FROM t_feature_info WHERE feature_url = #{feature_url}")
     public FeatureInfo findWithFeatureURL(String feature_url);
 

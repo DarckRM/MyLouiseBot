@@ -3,12 +3,12 @@ package com.darcklh.louise.Service.Impl;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.darcklh.louise.Mapper.RoleDao;
 import com.darcklh.louise.Mapper.UserDao;
 import com.darcklh.louise.Model.Louise.User;
 import com.darcklh.louise.Model.ReplyException;
 import com.darcklh.louise.Model.VO.UserRole;
 import com.darcklh.louise.Service.UserService;
+import com.darcklh.louise.Utils.DragonflyUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -28,10 +28,20 @@ import java.util.List;
 public class UserImpl extends ServiceImpl<UserDao, User> implements UserService {
 
     @Autowired
-    UserDao userDao;
-
+    DragonflyUtils dragonflyUtils;
     @Autowired
-    RoleDao roleDao;
+    UserDao userDao;
+    private boolean isUpdate = true;
+
+    private final String userKey = "model:user:id:";
+
+    public boolean isUpdate() {
+        return this.isUpdate;
+    }
+
+    public void update(boolean status) {
+        this.isUpdate = status;
+    }
 
     public JSONObject joinLouise(long user_id, long group_id) {
 
@@ -89,10 +99,21 @@ public class UserImpl extends ServiceImpl<UserDao, User> implements UserService 
 
     @Override
     public User selectById(long user_id) {
-        User user = userDao.selectById(user_id);
-        if (user == null) {
-            log.warn("用户 " + user_id + " 不存在");
-            return null;
+        // 如果数据未更新则从缓存中取值
+        User user;
+        // 缓存的值是最新的
+        if (isUpdate()) {
+            user = dragonflyUtils.get(userKey + user_id, User.class);
+            // 如果缓存中没有值则写入
+            if (user == null) {
+                user = userDao.selectById(user_id);
+                dragonflyUtils.set(userKey + user_id, user);
+            } else {
+                log.debug("用户命中缓存");
+            }
+        } else {
+            user = userDao.selectById(user_id);
+            dragonflyUtils.set(userKey + user_id, user);
         }
         return user;
     }

@@ -17,4 +17,5 @@ public interface FeatureInfoService extends BaseService<FeatureInfo>{
     public FeatureInfo findWithFeatureCmd(String feature_cmd, long user_id);
     public List<FeatureInfoMin> findWithRoleId(Integer role_id);
     public void addCount(Integer feature_id, long group_id, long user_id);
+    public List<FeatureInfoMin> findAllMins();
 }

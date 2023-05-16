@@ -23,4 +23,6 @@ public interface GroupService extends BaseService<Group> {
     public String switchStatus(long group_id);
     public boolean isGroupExist(long group_id);
     public boolean isGroupEnabled(long group_id);
+    public int isGroupAvailable(long groupId);
+    public Group getGroupAvailable(long groupId);
 }

@@ -1,5 +1,6 @@
 package com.darcklh.louise.Utils;
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.darcklh.louise.Config.LouiseConfig;
@@ -8,6 +9,7 @@ import com.darcklh.louise.Controller.PluginInfoController;
 import com.darcklh.louise.Controller.SaitoController;
 import com.darcklh.louise.Mapper.SysConfigDao;
 import com.darcklh.louise.Mapper.CronTaskDao;
+import com.darcklh.louise.Model.Louise.Role;
 import com.darcklh.louise.Model.Messages.Message;
 import com.darcklh.louise.Model.Messages.Node;
 import com.darcklh.louise.Model.Result;
@@ -15,8 +17,10 @@ import com.darcklh.louise.Model.Saito.CronTask;
 import com.darcklh.louise.Model.Saito.FeatureInfo;
 import com.darcklh.louise.Model.Saito.PluginInfo;
 import com.darcklh.louise.Model.Saito.SysConfig;
+import com.darcklh.louise.Model.VO.FeatureInfoMin;
 import com.darcklh.louise.Service.CronTaskService;
 import com.darcklh.louise.Service.FeatureInfoService;
+import com.darcklh.louise.Service.RoleService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -37,7 +41,7 @@ public class BootApplication {
     SysConfigDao sysConfigDao;
 
     @Autowired
-    SaitoController saitoController;
+    RoleService roleService;
 
     @Autowired
     CronTaskDao cronTaskDao;
@@ -95,6 +99,7 @@ public class BootApplication {
 
         //将配置写入 DragonFly 缓存
         log.info("<--加载 MyLouise 功能信息-->");
+        String featureKey = "model:feature:cmd:";
         List<FeatureInfo> featureInfos = featureInfoService.findBy();
         for (FeatureInfo info : featureInfos) {
             String cmd = info.getFeature_cmd().split(" ")[0];
@@ -102,7 +107,22 @@ public class BootApplication {
                 cmd = cmd.substring(0, cmd.indexOf("/") + 1) + "{%";
             else
                 cmd += " %";
-            dragonflyUtils.set(cmd, info);
+            dragonflyUtils.set(featureKey + cmd, info);
+        }
+
+        log.info("<--加载 MyLouise 权限信息-->");
+        String featureMinKey = "model:feature_min:role_id:";
+        List<Role> roles = roleService.findBy();
+        if (!roles.isEmpty()) {
+            JSONArray array = new JSONArray();
+            for ( Role role : roles) {
+                List<FeatureInfoMin> mins = featureInfoService.findWithRoleId(role.getRole_id());
+                array.addAll(mins);
+                dragonflyUtils.set(featureMinKey + role.getRole_id(), array);
+                array.clear();
+            }
+        } else {
+            log.info("<-!未加载到 MyLouise 权限信息!->");
         }
 
         try {

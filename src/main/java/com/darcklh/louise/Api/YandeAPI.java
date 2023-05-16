@@ -307,12 +307,10 @@ public class YandeAPI {
     }
 
     private JSONObject requestBooru(String url, String target, InMessage inMessage) {
-        OutMessage outMsg = new OutMessage(inMessage);
-
+        Message msg = Message.build(inMessage);
         // 判断是否携带 Tags 参数
         if (inMessage.getMessage().length() < 7) {
-            outMsg.setMessage("请至少携带一个 Tag 参数，像这样 !yande 参数1 参数2 页数 条数\n页数和条数可以不用指定");
-            r.sendMessage(outMsg);
+            msg.reply().text("请至少携带一个 Tag 参数，像这样 !yande 参数1 参数2 页数 条数\n页数和条数可以不用指定").send();
             return null;
         }
 
@@ -335,16 +333,11 @@ public class YandeAPI {
         Iterator<String> it = tag_array.iterator();
         while (it.hasNext()) {
             String tag = it.next();
-            if (pos > 1) {
-                outMsg.setMessage("[CQ:at,qq=" + outMsg.getUser_id() + "]" + "分页参数只有两个啦 页数 条数 (ﾟдﾟ)");
-                throw new ReplyException(outMsg);
-            }
-
+            if (pos > 1)
+                msg.reply().text("分页参数只有两个啦 页数 条数 (ﾟдﾟ)").fall("非法参数请求");
             try {
-                if (Integer.parseInt(tag) < 0) {
-                    outMsg.setMessage("[CQ:at,qq=" + outMsg.getUser_id() + "]" + "暂不支持负数分页 (*´д`)");
-                    throw new ReplyException(outMsg);
-                }
+                if (Integer.parseInt(tag) < 0)
+                    msg.reply().text("暂不支持负数分页 (*´д`)").fall("非法参数请求");
                 pageNation[pos] = tag;
                 pos++;
                 it.remove();
@@ -354,7 +347,7 @@ public class YandeAPI {
         }
 
         // 如果群聊加上过滤 tag
-        if (outMsg.getGroup_id() != -1)
+        if (msg.getGroup_id() != -1)
             tag_array.add("-rating:explicit");
 
         tags = tag_array.toArray(new String[0]);
@@ -399,8 +392,7 @@ public class YandeAPI {
 
         // pageNation 只准接收两个参数
         if (tags.length > 12) {
-            outMsg.setMessage("标签参数最大只允许 12 个");
-            r.sendMessage(outMsg);
+            msg.reply().text("标签最大只允许 12 个哦").fall("过多的参数");
             return null;
         }
 
@@ -470,9 +462,8 @@ public class YandeAPI {
         // 尝试从缓存获取
         LouiseThreadPool.execute(() -> {
             // 构造消息请求体
-            OutMessage outMessage = new OutMessage(inMessage);
-            outMessage.setMessage("[CQ:at,qq=" + inMessage.getSender().getUser_id() + "]" + ", 开始请求 " + target + " 的 Every " + type + " 精选图片");
-            r.sendMessage(outMessage);
+            Message message = Message.build(inMessage);
+            message.at().text("开始寻找今天的精选图片~").send();
             // 使用代理请求 Yande
             RestTemplate restTemplate = new RestTemplate();
             // 借助代理请求
@@ -485,8 +476,7 @@ public class YandeAPI {
 
             assert resultJsonArray != null;
             if(resultJsonArray.isEmpty()) {
-                outMessage.setMessage("[CQ:at,qq=" + inMessage.getSender().getUser_id() + "]" + "没有找到你想要的结果呢");
-                r.sendMessage(outMessage);
+                message.at().text("今天的 CG 还没有更新呢，请晚些再试吧 ~").send();
                 return;
             }
             try {
