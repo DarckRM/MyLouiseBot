@@ -1,6 +1,6 @@
 # MyLouise Bot
 
-![](https://img.shields.io/badge/go--cqhttp-v1.0.0-green)![](https://img.shields.io/badge/mysql-v8.0.31-blue)![](https://img.shields.io/badge/naiveui-v2.34.3-brightgreen)![](https://img.shields.io/badge/openjdk19-LTS-orange)![](https://img.shields.io/badge/louise-dev-ff69b4)
+![](https://img.shields.io/badge/go--cqhttp-v1.0.0-green) ![](https://img.shields.io/badge/mysql-v8.0.31-blue) ![](https://img.shields.io/badge/naiveui-v2.34.3-brightgreen) ![](https://img.shields.io/badge/openjdk19-LTS-orange) ![](https://img.shields.io/badge/louise-dev-ff69b4)
 
 ## 简介
 
