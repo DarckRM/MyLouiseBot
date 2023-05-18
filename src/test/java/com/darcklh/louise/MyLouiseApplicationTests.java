@@ -1,6 +1,7 @@
 package com.darcklh.louise;
 
 import com.darcklh.louise.Api.FileControlApi;
+import com.darcklh.louise.Utils.DragonflyUtils;
 import com.darcklh.louise.Utils.LouiseThreadPool;
 import com.darcklh.louise.Utils.OkHttpUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -18,4 +19,11 @@ import java.util.Base64;
 @Slf4j
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class MyLouiseApplicationTests {
+
+//    @Autowired
+//    DragonflyUtils dragonflyUtils;
+//    @Test
+//    public void test() {
+//        log.info(dragonflyUtils.scan("model:feature:").toString());
+//    }
 }

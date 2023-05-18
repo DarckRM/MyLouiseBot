@@ -16,6 +16,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -34,6 +35,10 @@ public class UserImpl extends ServiceImpl<UserDao, User> implements UserService 
     private boolean isUpdate = true;
 
     private final String userKey = "model:user:id:";
+
+    private final String creditLogKey = "op:credit:id:";
+
+    private int creditEditCount = 0;
 
     public boolean isUpdate() {
         return this.isUpdate;
@@ -161,14 +166,35 @@ public class UserImpl extends ServiceImpl<UserDao, User> implements UserService 
     }
 
     @Override
-    public int minusCredit(long user_id, int credit) {
+    public int minusCredit(long userId, int credit) {
+        // credit 的修改记录进行缓存 达到一定阈值写入数据库
+        creditEditCount++;
+        String stringCredit = dragonflyUtils.get(creditLogKey + userId);
+        int balance = 0;
+        if (stringCredit != null) {
+            balance = Integer.parseInt(stringCredit);
+            balance -= credit;
+            dragonflyUtils.set(creditLogKey + userId, String.valueOf(balance));
+        } else {
+            User user = userDao.selectById(userId);
+            balance = user.getCredit() - credit;
+            if (balance < 0)
+                return balance;
+            userDao.minusCredit(credit, userId);
+            dragonflyUtils.set(creditLogKey + userId, balance);
+            log.info("用户 " + userId + " CREDIT余额还有 " + balance);
+        }
 
-        User user = userDao.selectById(user_id);
-        int balance = user.getCredit() - credit;
-        if (balance < 0)
-            return balance;
-        userDao.minusCredit(credit, user_id);
-        log.info("用户 " + user_id + " CREDIT余额还有 " + balance);
+        if (creditEditCount == 30) {
+            log.info("开始 Credit 缓存数据持久化");
+            List<String> ids = dragonflyUtils.scan(creditLogKey);
+            List<User> users = userDao.selectBatchIds(ids);
+            for (User user : users) {
+                userDao.updateCredit(user.getUser_id(), Integer.parseInt(dragonflyUtils.get(creditLogKey + user.getUser_id())));
+            }
+            dragonflyUtils.remove(creditLogKey);
+            creditEditCount = 0;
+        }
         return balance;
     }
 

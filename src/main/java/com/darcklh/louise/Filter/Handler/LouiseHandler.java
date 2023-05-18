@@ -88,6 +88,8 @@ public class LouiseHandler implements HandlerInterceptor {
         FeatureInfo featureInfo = dragonflyUtils.get(featureKey + command, FeatureInfo.class);
         if (featureInfo == null) {
             featureInfo = featureInfoService.findWithFeatureCmd(command, userId);
+            if (featureInfo == null)
+                throw new ReplyException("未知的命令 " + command);
         }
 
         //判断功能是否启用

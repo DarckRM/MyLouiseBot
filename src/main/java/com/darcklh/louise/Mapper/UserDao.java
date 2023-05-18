@@ -49,4 +49,7 @@ public interface UserDao extends BaseMapper<User> {
 
     @Update("UPDATE t_user SET credit = credit - #{credit_cost} WHERE user_id = #{user_id}")
     public Integer minusCredit(Integer credit_cost, long user_id);
+
+    @Update("UPDATE t_user SET credit = #{credit} WHERE user_id = #{user_id}")
+    public Integer updateCredit(long user_id, int credit);
 }

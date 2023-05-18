@@ -11,8 +11,11 @@ import org.springframework.stereotype.Component;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.JedisPoolConfig;
+import redis.clients.jedis.params.ScanParams;
 
 import javax.annotation.PostConstruct;
+import java.util.List;
+import java.util.function.UnaryOperator;
 
 /**
  * @author DarckLH
@@ -125,6 +128,20 @@ public class DragonflyUtils {
         return result;
     }
 
+    public String set(String key, int number) {
+        String result = null;
+        try {
+            jedis = pool.getResource();
+            result = jedis.set(key, String.valueOf(number));
+        } catch (Exception e) {
+            log.error("set key:{} value{} error", key, number, e);
+            return result;
+        }finally {
+            jedis.close();
+        }
+        return result;
+    }
+
     public boolean set(String key, Object object) {
         if ( object instanceof JSONArray array) {
             return set(key, array.toJSONString()) != null;
@@ -157,6 +174,30 @@ public class DragonflyUtils {
     }
 
     /**
+     * jedis 获取指定命名空间的所有 key
+     * @param namespace
+     * @return 异常为 null
+     */
+    public List<String> scan(String namespace) {
+        List<String> result = null;
+        ScanParams params = new ScanParams();
+        params.match(namespace + "*");
+        params.count(1024);
+        String scanRet = "0";
+        try {
+            jedis = pool.getResource();
+            result = jedis.scan(scanRet, params).getResult();
+            result.replaceAll(s -> s.replace(namespace, ""));
+        } catch (Exception e) {
+            log.error("scan key:{} error", namespace, e);
+            return result;
+        } finally {
+            jedis.close();
+        }
+        return result;
+    }
+
+    /**
      * jedis 删除方法
      *
      * @param key key
@@ -174,6 +215,31 @@ public class DragonflyUtils {
             jedis.close();
         }
         return result;
+    }
+
+    /**
+     * 删除命名空间下的所有值
+     * @param namespace namespace
+     * @return long
+     */
+    public long remove(String namespace) {
+        List<String> result = null;
+        ScanParams params = new ScanParams();
+        params.match(namespace + "*");
+        params.count(1024);
+        String scanRet = "0";
+        try {
+            jedis = pool.getResource();
+            result = jedis.scan(scanRet, params).getResult();
+            for (String key : result)
+                jedis.del(key);
+            return result.size();
+        } catch (Exception e) {
+            log.error("scan key:{} error", namespace, e);
+            return -1;
+        } finally {
+            jedis.close();
+        }
     }
 
     public Object actionDf(CallDf<Object> callDf) {

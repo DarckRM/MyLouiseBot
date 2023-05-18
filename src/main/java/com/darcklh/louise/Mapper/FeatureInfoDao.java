@@ -37,6 +37,6 @@ public interface FeatureInfoDao extends BaseMapper<FeatureInfo> {
     @Select("SELECT is_enabled FROM t_feature_info WHERE feature_id = #{feature_id}")
     public Integer isEnabled(Integer feature_id);
 
-    @Select("UPDATE t_feature_info SET count = count + 1 WHERE feature_id = #{feature_id}")
-    public Integer addCount(Integer feature_id);
+    @Select("UPDATE t_feature_info SET count = count + #{count} WHERE feature_id = #{feature_id}")
+    public Integer addCount(Integer feature_id, int count);
 }

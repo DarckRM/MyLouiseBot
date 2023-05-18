@@ -14,6 +14,7 @@ import com.darcklh.louise.Model.ReplyException;
 import com.darcklh.louise.Model.Saito.PluginInfo;
 import com.darcklh.louise.Model.R;
 import com.darcklh.louise.Service.*;
+import com.darcklh.louise.Utils.LouiseThreadPool;
 import com.darcklh.louise.Utils.PluginManager;
 import com.darcklh.louise.Utils.ReplyExceptionHandler;
 import com.darcklh.louise.Utils.UniqueGenerator;
@@ -69,14 +70,9 @@ public class MyLouiseApi implements ErrorController {
      * @return
      */
     @RequestMapping("/louise/invoke/{pluginId}")
-    public JSONObject pluginsCenter(@PathVariable Integer pluginId, @RequestBody InMessage inMessage) {
+    public void pluginsCenter(@PathVariable Integer pluginId, @RequestBody InMessage inMessage) {
         PluginInfo pluginInfo = PluginManager.pluginInfos.get(pluginId);
-        Thread t = new Thread(() -> {
-            pluginInfo.getPluginService().service(inMessage);
-        }, UniqueGenerator.uniqueThreadName("PLG", "Plugin Invoke"));
-        t.setUncaughtExceptionHandler(new ReplyExceptionHandler());
-        t.start();
-        return null;
+        LouiseThreadPool.execute(() -> pluginInfo.getPluginService().service(inMessage));
     }
 
     /**
@@ -261,6 +257,7 @@ public class MyLouiseApi implements ErrorController {
      * @param inMessage
      * @return JSONObject
      */
+    // TODO 基本废弃了，，，
     @RequestMapping("louise/setu")
     private JSONObject sendRandomSetu(@RequestBody InMessage inMessage) {
 
@@ -346,23 +343,6 @@ public class MyLouiseApi implements ErrorController {
                 "\n" + hiList);
 
         return returnJson;
-    }
-
-    //@RequestMapping("louise/pid/{pixiv_id}")
-    private JSONObject findPixivId(@PathVariable String pixiv_id, @RequestBody InMessage inMessage) {
-        String nickname = inMessage.getSender().getNickname();
-        OutMessage outMessage = new OutMessage(inMessage);
-        String msg = nickname + "，你要的图片" + pixiv_id + "找到了" +
-                "\n[CQ:image,file=" +LouiseConfig.PIXIV_PROXY_URL + pixiv_id + ".jpg]" +
-                "\n如果未显示出图片请在pixiv_id后指定第几张作品";
-
-        if (outMessage.getGroup_id() < 0)
-            outMessage.setMessage(msg);
-        else
-            outMessage.getMessages().add(new Node(msg, inMessage.getSelf_id()));
-        log.info(JSONObject.toJSONString(outMessage));
-        r.sendMessage(outMessage);
-        return null;
     }
 
     /**
