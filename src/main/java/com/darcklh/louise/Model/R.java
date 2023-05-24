@@ -20,7 +20,6 @@ import java.net.*;
  * 和Cqhttp通信的实体
  */
 @Data
-@Component
 @Slf4j
 public class R {
 
@@ -92,7 +91,7 @@ public class R {
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<String> cqhttp = new HttpEntity<>(JSONObject.toJSONString(outMessage), headers);
         // 开始请求
-        log.info("请求 cqhttp 接口: " + api);
+        log.info("┌ 请求 cqhttp 接口: " + api);
         JSONObject response = restTemplate.postForObject(LouiseConfig.BOT_BASE_URL + api, cqhttp, JSONObject.class);
 
         // 校验请求结果
@@ -105,7 +104,7 @@ public class R {
             restTemplate.postForObject(LouiseConfig.BOT_BASE_URL + "send_msg", cqhttp, JSONObject.class);
         }
         this.refresh();
-        log.info("接口 " + api + " 返回消息:" + response.toString());
+        log.info("└ 接口 " + api + " 返回消息:" + response.toString());
         return response;
     }
 
@@ -116,7 +115,7 @@ public class R {
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<String> cqhttp = new HttpEntity<>(JSONObject.toJSONString(message), headers);
         // 开始请求
-        log.info("请求 cqhttp 接口: " + api);
+        log.debug("┌ 请求 cqhttp 接口: " + api);
         JSONObject response = restTemplate.postForObject(LouiseConfig.BOT_BASE_URL + api, cqhttp, JSONObject.class);
 
         // 校验请求结果
@@ -125,11 +124,11 @@ public class R {
             message.text(result);
             cqhttp = new HttpEntity<>(JSONObject.toJSONString(message), headers);
 
-            log.info("发送错误原因:" + response.getString("wording") + " : " + response.getString("msg"));
+            log.info("| 发送错误原因:" + response.getString("wording") + " : " + response.getString("msg"));
             restTemplate.postForObject(LouiseConfig.BOT_BASE_URL + "send_msg", cqhttp, JSONObject.class);
         }
         this.refresh();
-        log.info("接口 " + api + " 返回消息:" + response.toString());
+        log.info("└ 接口 " + api + " 返回消息:" + response);
         return response;
     }
 
@@ -139,7 +138,6 @@ public class R {
      * @return response String
      */
     public void sendMessage(OutMessage outMessage) {
-
         if (!testConnWithBot())
             throw new InnerException(outMessage.getUser_id(), "无法连接 BOT， 请确认 Go-Cqhttp 正在运行", "");
         if (outMessage.getMessages().size() != 0)
@@ -163,7 +161,7 @@ public class R {
     public JSONObject send(Message message) {
         if (!testConnWithBot())
             throw new InnerException(message.getUser_id(), "无法连接 BOT， 请确认 Go-Cqhttp 正在运行", "");
-        if (message.getMessages().size() != 0)
+        if (!message.getMessages().isEmpty())
             return this.requestAPI("send_group_forward_msg", message);
         return this.requestAPI("send_msg", message);
     }

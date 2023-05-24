@@ -26,9 +26,6 @@ public class SearchPictureApi{
     @Autowired
     SearchPictureService searchPictureService;
 
-    @Autowired
-    R r;
-
     /**
      * 根据图片以及参数调用识图接口
      * @param inMessage

@@ -29,9 +29,6 @@ public class GroupImpl implements GroupService {
     @Autowired
     GroupDao groupDao;
 
-    @Autowired
-    R r;
-
     private boolean isUpdate = true;
     private final String groupKey = "model:group:id:";
 
@@ -120,6 +117,7 @@ public class GroupImpl implements GroupService {
     }
 
     private Group getGroupFromCqhttp(Group group) {
+        R r = new R();
         // 向Bot请求群聊数据
         JSONObject param = new JSONObject();
         param.put("group_id", group.getGroup_id());

@@ -17,6 +17,7 @@ import com.darcklh.louise.Model.Saito.CronTask;
 import com.darcklh.louise.Model.Saito.FeatureInfo;
 import com.darcklh.louise.Model.Saito.PluginInfo;
 import com.darcklh.louise.Model.Saito.SysConfig;
+import com.darcklh.louise.Model.Sender;
 import com.darcklh.louise.Model.VO.FeatureInfoMin;
 import com.darcklh.louise.Service.CronTaskService;
 import com.darcklh.louise.Service.FeatureInfoService;
@@ -127,6 +128,10 @@ public class BootApplication {
 
         try {
             Message msg = Message.build();
+            msg.setGroup_id(-1L);
+            Sender sender = new Sender();
+            sender.setNickname("ADMIN");
+            msg.setSender(sender);
             msg.setUser_id(Long.parseLong(LouiseConfig.LOUISE_ADMIN_NUMBER));
             msg.text("启动时间 " + bootDate + " Louise 系统已启动\n")
                     .text(result.getMsg())

@@ -131,7 +131,7 @@ public class LouiseHandler implements HandlerInterceptor {
             userMap.put(featureId, now);
             userReqLog.put(inMessage.getUser_id(), userMap);
         }
-        howMuchCost("请求限制校验耗时 {} 毫秒", stopWatch);
+        howMuchCost("| 请求限制校验耗时 {} 毫秒", stopWatch);
         // 放行不需要鉴权的命令
         if (featureInfo.getIs_auth() == 0) {
             // 更新调用统计数据
@@ -162,7 +162,7 @@ public class LouiseHandler implements HandlerInterceptor {
             }
 
             List<FeatureInfoMin> featureInfoMins = featureInfoService.findWithRoleId(group.getRole_id());
-            logger.debug("群聊允许的功能列表: {}", formatList(featureInfoMins));
+            logger.debug("| 群聊允许的功能列表: {}", formatList(featureInfoMins));
             for ( FeatureInfoMin featureInfoMin: featureInfoMins) {
                 if (featureInfoMin.getFeature_id().equals(featureInfo.getFeature_id())) {
                     tag = true;
@@ -176,7 +176,7 @@ public class LouiseHandler implements HandlerInterceptor {
         tag = false;
 
         List<FeatureInfoMin> featureInfoMins = featureInfoService.findWithRoleId(user.getRole_id());
-        logger.debug("用户允许的功能列表: {}", formatList(featureInfoMins));
+        logger.debug("| 用户允许的功能列表: {}", formatList(featureInfoMins));
         for ( FeatureInfoMin featureInfoMin: featureInfoMins) {
             if (featureInfoMin.getFeature_id().equals(featureInfo.getFeature_id())) {
                 tag = true;
@@ -191,12 +191,12 @@ public class LouiseHandler implements HandlerInterceptor {
         if (credit < 0) {
             throw new ReplyException("你的CREDIT余额不足哦");
         }
-        howMuchCost("请求鉴权耗时 {} 毫秒", stopWatch);
+        howMuchCost("| 请求鉴权耗时 {} 毫秒", stopWatch);
         // 更新调用统计数据
         featureInfoService.addCount(featureInfo.getFeature_id(), groupId, userId);
 
-        logger.info("功能 {} 消耗用户 {} CREDIT {}", featureInfo.getFeature_name(), userInfo, featureInfo.getCredit_cost());
-        howMuchCost("解析此次请求耗时 {} 毫秒", stopWatch);
+        logger.info("| 功能 {} 消耗用户 {} CREDIT {}", featureInfo.getFeature_name(), userInfo, featureInfo.getCredit_cost());
+        howMuchCost("└ 解析此次请求耗时 {} 毫秒", stopWatch);
         return true;
     }
 

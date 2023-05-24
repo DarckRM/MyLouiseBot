@@ -48,9 +48,6 @@ public class SearchPictureImpl implements SearchPictureService {
     @Autowired
     FileControlApi fileControlApi;
 
-    @Autowired
-    R r;
-
     /**
      * 通过SourceNAO开放API搜图
      * @param inMessage 昵称
@@ -176,9 +173,8 @@ public class SearchPictureImpl implements SearchPictureService {
         log.info("进入Ascii2d识别流程");
 
         JSONObject resultData = new JSONObject();
-        OutMessage outMessage = new OutMessage(inMessage);
         Message message = Message.build(inMessage);
-        String nickname = outMessage.getSender().getNickname();
+        String nickname = message.getSender().getNickname();
         RestTemplate restTemplate = new RestTemplate();
         //由于Ascii2d返回的是HTML文档 借助Jsoup进行解析
         try {
@@ -244,12 +240,11 @@ public class SearchPictureImpl implements SearchPictureService {
             String author_page = element.child(2).attr("href");
 
             if (source.equals("twitter")) {
-                outMessage.setMessage(nickname + "，这是Ascii2d的结果" +
+                message.text(nickname + "，这是Ascii2d的结果" +
                         "\n标题: " + title +
                         "\n作者: " + member_name +
-                        "\n来源推特: " + origin +
-                        "\n[CQ:image,file="+thumbnail+"]");
-                r.sendMessage(outMessage);
+                        "\n来源推特: " + origin)
+                        .image(thumbnail).send();
                 return;
             }
 
@@ -264,8 +259,7 @@ public class SearchPictureImpl implements SearchPictureService {
             handleFromPixiv("来自Ascii2d", resultData, resultData, message).send();
         } catch (Exception e) {
             log.info("请求失败： "+e.getMessage());
-            outMessage.setMessage("请求Ascii2d失败了！");
-            r.sendMessage(outMessage);
+            message.text("请求Ascii2d失败了！").send();
         }
     }
 

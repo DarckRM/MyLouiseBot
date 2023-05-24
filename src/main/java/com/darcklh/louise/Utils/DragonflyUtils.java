@@ -46,13 +46,37 @@ public class DragonflyUtils {
     @Value("${spring.redis.jedis.pool.min-idle}")
     private int minIdle;
 
+    private static DragonflyUtils INSTANCE;
+
+    /**
+     * 用于开发插件时获取实例
+     * 如果是从 Louise 系统启动应用则由配置文件管理参数
+     * 如果是插件开发中使用则会使用构造函数管理参数
+     * @return
+     */
+    public static DragonflyUtils getInstance(int maxIdle, int maxActive, String host, int port, int timeout, String password) {
+        // 如果存在直接返回对象
+        if (INSTANCE != null)
+            return INSTANCE;
+
+        JedisPoolConfig config = new JedisPoolConfig();
+        config.setMaxIdle(maxIdle);
+        config.setMaxTotal(maxActive);
+        DragonflyUtils dragon = new DragonflyUtils();
+        dragon.pool = new JedisPool(config, host, port, timeout, password);
+        return dragon;
+
+    }
+
 
     @PostConstruct
     public void init() {
         JedisPoolConfig config = new JedisPoolConfig();
+        // 如果存在
         config.setMaxIdle(maxIdle);
         config.setMaxTotal(maxActive);
         pool = new JedisPool(config, host, port, timeout, password);
+        INSTANCE = this;
     }
 
     /**

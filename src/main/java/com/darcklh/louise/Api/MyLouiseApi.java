@@ -3,20 +3,18 @@ package com.darcklh.louise.Api;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.darcklh.louise.Config.LouiseConfig;
+import com.darcklh.louise.Model.Annotation.OnCommand;
+import com.darcklh.louise.Model.Annotation.OnMessage;
 import com.darcklh.louise.Model.Louise.Group;
 import com.darcklh.louise.Model.Louise.Role;
 import com.darcklh.louise.Model.Louise.User;
 import com.darcklh.louise.Model.Messages.InMessage;
 import com.darcklh.louise.Model.Messages.Message;
-import com.darcklh.louise.Model.Messages.Node;
-import com.darcklh.louise.Model.Messages.OutMessage;
 import com.darcklh.louise.Model.ReplyException;
 import com.darcklh.louise.Model.Saito.PluginInfo;
-import com.darcklh.louise.Model.R;
 import com.darcklh.louise.Service.*;
 import com.darcklh.louise.Utils.LouiseThreadPool;
 import com.darcklh.louise.Utils.PluginManager;
-import com.darcklh.louise.Utils.ReplyExceptionHandler;
 import com.darcklh.louise.Utils.UniqueGenerator;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
@@ -26,12 +24,12 @@ import org.springframework.boot.web.servlet.error.ErrorController;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.*;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 
 @Slf4j
 @RestController
@@ -40,9 +38,6 @@ public class MyLouiseApi implements ErrorController {
 
     @Autowired
     private SendPictureApi sendPictureApi;
-
-    @Autowired
-    private R r;
 
     @Autowired
     private GroupService groupService;
@@ -71,7 +66,21 @@ public class MyLouiseApi implements ErrorController {
      */
     @RequestMapping("/louise/invoke/{pluginId}")
     public void pluginsCenter(@PathVariable Integer pluginId, @RequestBody InMessage inMessage) {
+        String text = inMessage.getMessage();
         PluginInfo pluginInfo = PluginManager.pluginInfos.get(pluginId);
+        Class<? extends PluginInfo> plugin = pluginInfo.getClass();
+
+        for (Method m : plugin.getDeclaredMethods()) {
+
+            if (m.isAnnotationPresent(OnMessage.class)) {
+
+            }
+
+            if (m.isAnnotationPresent(OnCommand.class)) {
+
+            }
+        }
+
         LouiseThreadPool.execute(() -> pluginInfo.getPluginService().service(inMessage));
     }
 
@@ -380,7 +389,9 @@ public class MyLouiseApi implements ErrorController {
         if (user == null) {
             returnJson.put("reply", "没有你的信息诶");
         } else {
-            OutMessage out = new OutMessage(inMessage);
+            Message message = Message.build(inMessage);
+            message.setGroup_id(-1L);
+            message.setMessage_type("privacy");
             String nickname = user.getNickname();
             Timestamp create_time = user.getCreate_time();
             int count_setu = user.getCount_setu();
@@ -394,9 +405,7 @@ public class MyLouiseApi implements ErrorController {
                     "\n你的权限级别：<" + role.getRole_name() + ">" +
                     "\n剩余CREDIT：" + user.getCredit() +
                     "\nCREDIT BUFF：" + user.getCredit_buff();
-            out.setMessage(myInfos);
-            out.setMessage_type("private");
-            r.sendMessage(out);
+            message.text(myInfos).send();
         }
         returnJson.put("reply", "[CQ:at,qq=" + inMessage.getUser_id() + "]已私聊发送你的个人信息");
         return returnJson;

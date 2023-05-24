@@ -56,9 +56,6 @@ public class YandeAPI {
     @Autowired
     DragonflyUtils dragonflyUtils;
 
-    @Autowired
-    R r;
-
     /**
      * 向数据库追加一条图站词条对照记录
      * @param inMessage
@@ -415,9 +412,8 @@ public class YandeAPI {
 
         LouiseThreadPool.execute(() -> {
             // 构造消息请求体
-            OutMessage outMessage = new OutMessage(inMessage);
-            outMessage.setMessage("[CQ:at,qq=" + inMessage.getSender().getUser_id() + "] 开始检索 Yande 图片咯");
-            r.sendMessage(outMessage);
+            Message outMessage =Message.build(inMessage);
+            outMessage.reply().text("开始检索 Yande 图库咯").send();
             StringBuilder tagsParam = new StringBuilder();
             // 构造 Tags 参数
             for(String tag : finalTags)
@@ -426,15 +422,14 @@ public class YandeAPI {
             StringBuilder uri = new StringBuilder();
             uri.append(url).append(tagsParam.toString()).append("&limit=").append(finalPageNation[1]).append("&page=").append(finalPageNation[0]);
 
-            log.info("请求地址: " + uri.toString());
+            log.info("请求地址: " + uri);
             // 使用代理请求 Yande
             String result = OkHttpUtils.builder().url(uri.toString()).get().async();
             JSONArray resultJsonArray = JSON.parseArray(result);
 
             assert resultJsonArray != null;
             if(resultJsonArray.isEmpty()) {
-                outMessage.setMessage("[CQ:at,qq=" + inMessage.getSender().getUser_id() + "]" + "没有找到你想要的结果呢，请检查参数是否正确，或者发送!yande/help获取帮助 |д`)");
-                r.sendMessage(outMessage);
+                outMessage.reply().text("没有找到你想要的结果呢，请检查参数是否正确，或者发送!yande/help获取帮助 |д`)").send();
                 return;
             }
             try {
@@ -530,14 +525,7 @@ public class YandeAPI {
             };
             tagList.append(name).append(" 类型: ").append(type).append(" 有 ").append(count).append(" 张 \r\n");
         }
-
-        OutMessage outMessage = new OutMessage(inMessage);
-        if (outMessage.getGroup_id() < 0)
-            outMessage.setMessage(tagList.toString());
-        else
-            outMessage.getMessages().add(new Node(tagList.toString(), inMessage.getSelf_id()));
-        r.sendMessage(outMessage);
-
+        Message.build(inMessage).node(Node.build().text(tagList.toString())).send();
         return null;
     }
 }

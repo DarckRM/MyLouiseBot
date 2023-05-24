@@ -38,9 +38,6 @@ public class CronTaskImpl extends ServiceImpl<CronTaskDao, CronTask> implements 
     public Map<String, ScheduledFuture<?>> taskMap = new ConcurrentHashMap<>();
     public List<String> taskList = new CopyOnWriteArrayList<String>();
 
-    @Autowired
-    R r;
-
     private final ThreadPoolTaskScheduler syncScheduler;
 
     public CronTaskImpl(ThreadPoolTaskScheduler syncScheduler) {

@@ -22,9 +22,6 @@ import java.sql.SQLIntegrityConstraintViolationException;
 @ControllerAdvice(annotations = RestController.class)
 public class NaiveSaitoControllerHandler {
 
-    @Autowired
-    R r;
-
     @ExceptionHandler(value = InnerException.class)
     @ResponseBody
     public JSONObject innerExceptionHandler(InnerException sE) {
@@ -39,6 +36,7 @@ public class NaiveSaitoControllerHandler {
     @ExceptionHandler(value = ReplyException.class)
     @ResponseBody
     public JSONObject handleReplyException(ReplyException e) {
+        R r = new R();
         switch (e.getType()) {
             case 0 -> {
                 return e.getReply();

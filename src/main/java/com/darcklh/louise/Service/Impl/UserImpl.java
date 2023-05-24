@@ -9,6 +9,7 @@ import com.darcklh.louise.Model.ReplyException;
 import com.darcklh.louise.Model.VO.UserRole;
 import com.darcklh.louise.Service.UserService;
 import com.darcklh.louise.Utils.DragonflyUtils;
+import com.darcklh.louise.Utils.LouiseThreadPool;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -182,18 +183,20 @@ public class UserImpl extends ServiceImpl<UserDao, User> implements UserService 
                 return balance;
             userDao.minusCredit(credit, userId);
             dragonflyUtils.set(creditLogKey + userId, balance);
-            log.info("用户 " + userId + " CREDIT余额还有 " + balance);
+            log.info("用户 " + userId + " CREDIT 余额还有 " + balance);
         }
 
         if (creditEditCount == 30) {
-            log.info("开始 Credit 缓存数据持久化");
-            List<String> ids = dragonflyUtils.scan(creditLogKey);
-            List<User> users = userDao.selectBatchIds(ids);
-            for (User user : users) {
-                userDao.updateCredit(user.getUser_id(), Integer.parseInt(dragonflyUtils.get(creditLogKey + user.getUser_id())));
-            }
-            dragonflyUtils.remove(creditLogKey);
-            creditEditCount = 0;
+            LouiseThreadPool.execute(() -> {
+                log.info("开始 Credit 缓存数据持久化");
+                List<String> ids = dragonflyUtils.scan(creditLogKey);
+                List<User> users = userDao.selectBatchIds(ids);
+                for (User user : users) {
+                    userDao.updateCredit(user.getUser_id(), Integer.parseInt(dragonflyUtils.get(creditLogKey + user.getUser_id())));
+                }
+                dragonflyUtils.remove(creditLogKey);
+                creditEditCount = 0;
+            });
         }
         return balance;
     }

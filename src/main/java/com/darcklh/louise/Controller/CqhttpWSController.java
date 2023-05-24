@@ -24,8 +24,10 @@ import org.springframework.stereotype.Controller;
 import javax.annotation.PostConstruct;
 import javax.websocket.*;
 import javax.websocket.server.ServerEndpoint;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
@@ -105,11 +107,10 @@ public class CqhttpWSController {
             if (entry.getValue().getType() != 0) {
                 pattern = Pattern.compile(entry.getValue().getCmd());
                 if (pattern.matcher(inMessage.getMessage()).find()) {
+                    log.info("用户 {} 请求 {} at {}", inMessage.getSender().getNickname() + "(" + inMessage.getUser_id() + ")", entry.getValue().getName(), new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date().getTime()));
                     // 更新调用统计数据
                     cqhttpWSController.featureInfoService.addCount(entry.getValue().getFeature_id(), inMessage.getGroup_id(), inMessage.getUser_id());
-                    LouiseThreadPool.execute(() -> {
-                        entry.getValue().getPluginService().service(inMessage);
-                    });
+                    LouiseThreadPool.execute(() -> entry.getValue().getPluginService().service(inMessage));
                 }
             }
         }

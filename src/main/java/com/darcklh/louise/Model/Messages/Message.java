@@ -159,7 +159,7 @@ public class Message {
 
     public void send() {
         R r = new R();
-        if (this.group_id == -1 && this.messages.size() != 0) {
+        if (this.group_id == -1 && !this.messages.isEmpty()) {
             Message message = Message.build();
             message.setUser_id(this.user_id);
             message.setGroup_id(this.group_id);
@@ -168,8 +168,19 @@ public class Message {
             for (Node node : messages) {
                 nodeToMessage(message, node);
                 message.send();
+                try {
+                    Thread.sleep(500L);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
         } else {
+            long groupInfo = this.getGroup_id();
+            String userInfo = this.getSender().getNickname() + "(" + this.getUser_id() + ")";
+            if (groupInfo != -1)
+                log.info("发送到 群聊({}): {}", groupInfo, this.getMessages().size() == 0 ? this.getMessage().toString() : this.getMessages().toString());
+            else
+                log.info("发送到 私聊{}: {}", userInfo, this.getMessage().toString());
             r.send(this);
         }
         this.clear();
@@ -178,14 +189,9 @@ public class Message {
     private void nodeToMessage(Message message, Node node) {
         for (Node.Transfer transfer : node.transfers) {
             switch (transfer.nodeType) {
-                case text: message.text(transfer.value); break;
-                case image: message.image(transfer.value); break;
+                case text -> message.text(transfer.value);
+                case image -> message.image(transfer.value);
             }
-        }
-        try {
-            Thread.sleep(1000L);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
         }
     }
 

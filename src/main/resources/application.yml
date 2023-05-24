@@ -5,8 +5,6 @@ server:
 spring:
   profiles:
     active: dev
-  mvc:
-    static-path-pattern: /templates/asserts/**
   servlet:
     multipart:
       max-request-size: 10MB
