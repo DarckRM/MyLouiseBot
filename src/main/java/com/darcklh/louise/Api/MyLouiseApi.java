@@ -30,6 +30,7 @@ import java.net.URL;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 
 @Slf4j
 @RestController
@@ -66,21 +67,7 @@ public class MyLouiseApi implements ErrorController {
      */
     @RequestMapping("/louise/invoke/{pluginId}")
     public void pluginsCenter(@PathVariable Integer pluginId, @RequestBody InMessage inMessage) {
-        String text = inMessage.getMessage();
         PluginInfo pluginInfo = PluginManager.pluginInfos.get(pluginId);
-        Class<? extends PluginInfo> plugin = pluginInfo.getClass();
-
-        for (Method m : plugin.getDeclaredMethods()) {
-
-            if (m.isAnnotationPresent(OnMessage.class)) {
-
-            }
-
-            if (m.isAnnotationPresent(OnCommand.class)) {
-
-            }
-        }
-
         LouiseThreadPool.execute(() -> pluginInfo.getPluginService().service(inMessage));
     }
 

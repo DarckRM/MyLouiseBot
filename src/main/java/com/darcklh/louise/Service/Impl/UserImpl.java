@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.darcklh.louise.Mapper.UserDao;
+import com.darcklh.louise.Model.InnerException;
 import com.darcklh.louise.Model.Louise.User;
 import com.darcklh.louise.Model.ReplyException;
 import com.darcklh.louise.Model.VO.UserRole;
@@ -150,18 +151,29 @@ public class UserImpl extends ServiceImpl<UserDao, User> implements UserService 
 
     public String banUser(long user_id) {
         String reply = "变更状态失败";
+        User user = dragonflyUtils.get(userKey + user_id, User.class);
+
+        if (user == null) {
+            user = userDao.selectById(user_id);
+            if (user == null)
+                throw new InnerException(500, "没有找到需要的用户", "");
+        }
+
         if (userDao.banUser(user_id) == 1) {
-            reply = isUserAvailable(user_id) == 1 ? "用户"+user_id+"已解封" : "用户"+user_id+"已封禁";
+            reply = user.getIsEnabled() == 1 ? "用户" + user_id + "已解封" : "用户" + user_id + "已封禁";
+            user.setIsEnabled(-user.getIsEnabled());
+
+            dragonflyUtils.set(userKey + user_id, user);
         }
         return reply;
     }
 
     public int isUserAvailable(long user_id) {
         //判断用户是否已注册
-        if (userDao.isUserExist(user_id) == 0)
+        User user = userDao.selectById(user_id);
+        if (user == null)
             return 0;
-        //判断用户是否启用
-        if (userDao.isUserEnabled(user_id) <= 0)
+        else if (user.getIsEnabled() <= 0)
             return -1;
         return 1;
     }

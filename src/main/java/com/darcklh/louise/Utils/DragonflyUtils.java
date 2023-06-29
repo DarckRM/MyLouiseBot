@@ -55,9 +55,7 @@ public class DragonflyUtils {
      * @return
      */
     public static DragonflyUtils getInstance(int maxIdle, int maxActive, String host, int port, int timeout, String password) {
-        // 如果存在直接返回对象
-        if (INSTANCE != null)
-            return INSTANCE;
+
 
         JedisPoolConfig config = new JedisPoolConfig();
         config.setMaxIdle(maxIdle);
@@ -66,6 +64,13 @@ public class DragonflyUtils {
         dragon.pool = new JedisPool(config, host, port, timeout, password);
         return dragon;
 
+    }
+
+    public static DragonflyUtils getInstance() {
+        // 如果存在直接返回对象
+        if (INSTANCE != null)
+            return INSTANCE;
+        else return null;
     }
 
 

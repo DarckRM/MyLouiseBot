@@ -2,14 +2,15 @@ package com.darcklh.louise.Model.Saito;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.darcklh.louise.Model.GoCqhttp.NoticePost;
 import com.darcklh.louise.Service.PluginService;
 import lombok.Data;
-import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Repository;
 
+import java.lang.reflect.Method;
 import java.sql.Timestamp;
-import java.util.List;
+import java.util.EnumMap;
+import java.util.HashMap;
 
 /**
  * 插件封装类
@@ -18,6 +19,12 @@ import java.util.List;
 @Component
 public class PluginInfo {
 
+    @TableField(exist = false)
+    private HashMap<String, Method> commandsMap = new HashMap<>();
+    @TableField(exist = false)
+    private HashMap<String, Method> messagesMap = new HashMap<>();
+    @TableField(exist = false)
+    private EnumMap<NoticePost.NoticeType, Method> noticesMap = new EnumMap<>(NoticePost.NoticeType.class);
     @TableField(exist = false)
     PluginService pluginService;
 

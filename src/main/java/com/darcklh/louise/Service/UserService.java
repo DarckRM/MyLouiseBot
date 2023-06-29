@@ -18,6 +18,4 @@ public interface UserService extends IService<User> {
     public User selectById(long user_id);
     public int minusCredit(long user_id, int credit);
 
-
-
 }

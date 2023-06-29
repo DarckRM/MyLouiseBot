@@ -6,6 +6,7 @@ import com.darcklh.louise.Model.Messages.Message;
 import com.darcklh.louise.Model.Messages.OutMessage;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.ibatis.javassist.runtime.Inner;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -169,7 +170,7 @@ public class R {
     public void fall(Message message, String text) {
         if (!testConnWithBot())
             throw new InnerException(message.getUser_id(), "无法连接 BOT， 请确认 Go-Cqhttp 正在运行", "");
-        if (message.getMessages().size() != 0)
+        if (!message.getMessages().isEmpty())
             this.requestAPI("send_group_forward_msg", message);
         this.requestAPI("send_msg", message);
         throw new InnerException(message.getUser_id(), text, "");
@@ -177,7 +178,7 @@ public class R {
     public void fall(Message message) {
         if (!testConnWithBot())
             throw new InnerException(message.getUser_id(), "无法连接 BOT， 请确认 Go-Cqhttp 正在运行", "");
-        if (message.getMessages().size() != 0)
+        if (!message.getMessages().isEmpty())
             this.requestAPI("send_group_forward_msg", message);
         this.requestAPI("send_msg", message);
         throw new InnerException(message.getUser_id(), "主动退出", "");

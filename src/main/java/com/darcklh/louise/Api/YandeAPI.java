@@ -260,8 +260,10 @@ public class YandeAPI {
         int total_cost = 0;
         do {
             done = 0;
-            if (total_cost >= 90000)
+            if (total_cost >= 90000) {
+                total_cost = 0;
                 message.reply().text("你的请求处理超时了，请稍候再试吧 |д`)").fall();
+            }
             for (WorkThread thread : workThreads)
                 if (thread.getRestTask() == 0)
                     done++;

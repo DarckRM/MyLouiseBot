@@ -1,5 +1,10 @@
 package com.darcklh.louise.Utils;
 
+import com.darcklh.louise.Model.Annotation.LouisePlugin;
+import com.darcklh.louise.Model.Annotation.OnCommand;
+import com.darcklh.louise.Model.Annotation.OnMessage;
+import com.darcklh.louise.Model.Annotation.OnNotice;
+import com.darcklh.louise.Model.GoCqhttp.NoticePost;
 import com.darcklh.louise.Model.Saito.PluginInfo;
 import com.darcklh.louise.Service.PluginService;
 import lombok.extern.slf4j.Slf4j;
@@ -8,11 +13,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 插件管理类
@@ -23,7 +30,7 @@ public class PluginManager {
 
     Logger logger = LoggerFactory.getLogger(PluginManager.class);
 
-    public static HashMap<Integer, PluginInfo> pluginInfos = new HashMap<>();
+    public static final HashMap<Integer, PluginInfo> pluginInfos = new HashMap<>();
 
     private URLClassLoader urlClassLoader;
 
@@ -44,9 +51,10 @@ public class PluginManager {
 
     private void loadingPlugin(PluginInfo pluginInfo) throws IllegalAccessException, InstantiationException {
         log.info("执行 [" + pluginInfo.getName() + "---" + pluginInfo.getAuthor() +"] 初始化函数 >>>");
-        PluginService plugin_service = getInstance(pluginInfo.getClass_name());
+        PluginService pluginService = getInstance(pluginInfo);
+
         try {
-            if(plugin_service.init()) {
+            if(pluginService.init()) {
                 log.info("结束 [" + pluginInfo.getName() + "---" + pluginInfo.getAuthor() +"] 初始化成功 <<<");
             } else
                 log.info(pluginInfo.getName() + " 加载失败");
@@ -55,7 +63,7 @@ public class PluginManager {
             log.error(error.getMessage());
             return;
         }
-        pluginInfo.setPluginService(plugin_service);
+        pluginInfo.setPluginService(pluginService);
         pluginInfos.put(pluginInfo.getPlugin_id(), pluginInfo);
     }
 
@@ -75,13 +83,65 @@ public class PluginManager {
         urlClassLoader = new URLClassLoader(urls, getClass().getClassLoader());
     }
 
-    public PluginService getInstance(String className) throws InstantiationException,IllegalAccessException {
+    public PluginService getInstance(PluginInfo pluginInfo) throws InstantiationException,IllegalAccessException {
         try {
-            Class<?> clazz = urlClassLoader.loadClass(className);
-            Object instance = clazz.newInstance();
-            return (PluginService) instance;
+            Class<?> plugin = urlClassLoader.loadClass(pluginInfo.getClass_name());
+            PluginService instance = (PluginService) plugin.newInstance();
+
+            // 处理 OnCommand, OnMessage 注解的方法 对注解的插件进行反射处理 命令注入 方法实例化
+            if (plugin.isAnnotationPresent(LouisePlugin.class)) {
+                // 前缀
+                String prefix = plugin.getAnnotation(LouisePlugin.class).prefix();
+
+                for (Method m : plugin.getDeclaredMethods()) {
+                    // 命令式方法
+                    if (m.isAnnotationPresent(OnCommand.class)) {
+                        // 获取该方法的MyAnnotation注解实例
+                        OnCommand annotation = m.getAnnotation(OnCommand.class);
+                        for (String command : annotation.commands()) {
+                            // 校验命令
+                            if ( command.length() > 12 ) {
+                                log.info(plugin.getName() + "." + m.getName() + ":" + command + " 命令过长 已略过");
+                                continue;
+                            }
+
+                            if ( command.length() == 0) {
+                                log.info(plugin.getName() + "." + m.getName() + ":" + command + " 命令非法 已略过");
+                                continue;
+                            }
+                            pluginInfo.getCommandsMap().put(prefix + " " + command, m);
+                        }
+                    }
+                    // 响应式方法
+                    if (m.isAnnotationPresent(OnMessage.class)) {
+                        // 获取该方法的MyAnnotation注解实例
+                        OnMessage annotation = m.getAnnotation(OnMessage.class);
+                        for (String message : annotation.messages()) {
+                            // 校验命令
+                            if ( message.length() > 64 ) {
+                                log.info(plugin.getName() + "." + m.getName() + ":" + message + " 表达式过长 已略过");
+                                continue;
+                            }
+
+                            if ( message.length() == 0) {
+                                log.info(plugin.getName() + "." + m.getName() + ":" + message + " 命令非法 已略过");
+                                continue;
+                            }
+                            pluginInfo.getMessagesMap().put(message, m);
+                        }
+                    }
+                    // 通知类型方法
+                    if (m.isAnnotationPresent(OnNotice.class)) {
+                        OnNotice annotation = m.getAnnotation(OnNotice.class);
+                        for (NoticePost.NoticeType notice : annotation.notices()) {
+                            pluginInfo.getNoticesMap().put(notice, m);
+                        }
+                    }
+                }
+            }
+            return instance;
         } catch (ClassNotFoundException e) {
-            logger.info("插件"+className+"未找到，加载失败");
+            logger.info("插件 {} 未找到，加载失败", pluginInfo.getClass_name());
             return null;
         }
 

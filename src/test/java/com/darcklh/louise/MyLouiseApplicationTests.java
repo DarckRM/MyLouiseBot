@@ -1,6 +1,12 @@
 package com.darcklh.louise;
 
 import com.darcklh.louise.Api.FileControlApi;
+import com.darcklh.louise.Model.Annotation.LouisePlugin;
+import com.darcklh.louise.Model.Annotation.OnCommand;
+import com.darcklh.louise.Model.Annotation.OnMessage;
+import com.darcklh.louise.Model.Messages.Message;
+import com.darcklh.louise.Model.Saito.PluginInfo;
+import com.darcklh.louise.Service.PluginService;
 import com.darcklh.louise.Utils.DragonflyUtils;
 import com.darcklh.louise.Utils.EncryptUtils;
 import com.darcklh.louise.Utils.LouiseThreadPool;
@@ -13,14 +19,82 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.util.Base64;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 @Slf4j
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class MyLouiseApplicationTests {
+
+    private final HashMap<String, Method> commandMap = new HashMap<>();
+    private final HashMap<String, Method> messageMap = new HashMap<>();
+
+    void testNewPlugin() {
+        TestPlugin testPlugin = new TestPlugin();
+        Class<? extends PluginService> plugin = testPlugin.getClass();
+
+        // 对注解的插件进行反射处理 {命令注入} {方法实例化}
+        if (plugin.isAnnotationPresent(LouisePlugin.class)) {
+            // 前缀
+            String prefix = plugin.getAnnotation(LouisePlugin.class).prefix();
+
+            for (Method m : plugin.getDeclaredMethods()) {
+                // 命令式方法
+                if (m.isAnnotationPresent(OnCommand.class)) {
+                    // 获取该方法的MyAnnotation注解实例
+                    OnCommand annotation = m.getAnnotation(OnCommand.class);
+                    for (String command : annotation.commands()) {
+                        // 校验命令
+                        if ( command.length() > 12 ) {
+                            log.info(plugin.getName() + "." + m.getName() + ":" + command + " 命令过长 已略过");
+                            continue;
+                        }
+
+                        if ( command.length() == 0) {
+                            log.info(plugin.getName() + "." + m.getName() + ":" + command + " 命令非法 已略过");
+                            continue;
+                        }
+                        commandMap.put(prefix + " " + command, m);
+                    }
+                }
+                // 响应式方法
+                if (m.isAnnotationPresent(OnMessage.class)) {
+                    // 获取该方法的MyAnnotation注解实例
+                    OnMessage annotation = m.getAnnotation(OnMessage.class);
+                    for (String message : annotation.messages()) {
+                        // 校验命令
+                        if ( message.length() > 64 ) {
+                            log.info(plugin.getName() + "." + m.getName() + ":" + message + " 表达式过长 已略过");
+                            continue;
+                        }
+
+                        if ( message.length() == 0) {
+                            log.info(plugin.getName() + "." + m.getName() + ":" + message + " 命令非法 已略过");
+                            continue;
+                        }
+                        messageMap.put(message, m);
+                    }
+                }
+            }
+        }
+
+
+
+        for (Map.Entry<String, Method> entry : commandMap.entrySet()) {
+            try {
+                entry.getValue().invoke(testPlugin, new Message());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+        }
+
+    }
 
     public void test() {
         final String body = "{\"need_wiki\":\"true\",\"role_id\":\"101009856\",\"server\":\"cn_gf01\"}";

@@ -68,7 +68,7 @@ public class BootApplication {
         bootDate = new Date();// 获取当前时间
 
         // 初始化线程池
-        new LouiseThreadPool(8, 16);
+        new LouiseThreadPool(32, 64);
 
         // 尝试从缓存中获取配置
         log.info("<--加载 MyLouise 配置信息-->");
@@ -101,6 +101,7 @@ public class BootApplication {
         //将配置写入 DragonFly 缓存
         log.info("<--加载 MyLouise 功能信息-->");
         String featureKey = "model:feature:cmd:";
+        String featureIdKey = "model:feature:id:";
         List<FeatureInfo> featureInfos = featureInfoService.findBy();
         for (FeatureInfo info : featureInfos) {
             String cmd = info.getFeature_cmd().split(" ")[0];
@@ -109,6 +110,7 @@ public class BootApplication {
             else
                 cmd += " %";
             dragonflyUtils.set(featureKey + cmd, info);
+            dragonflyUtils.set(featureIdKey + info.getFeature_id(), info);
         }
 
         log.info("<--加载 MyLouise 权限信息-->");

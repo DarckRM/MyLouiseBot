@@ -1,17 +1,24 @@
 package com.darcklh.louise.Controller;
 
 import com.alibaba.fastjson.JSONObject;
+import com.darcklh.louise.Config.LouiseConfig;
 import com.darcklh.louise.Model.GoCqhttp.AllPost;
 import com.darcklh.louise.Model.GoCqhttp.MessagePost;
 import com.darcklh.louise.Model.GoCqhttp.NoticePost;
 import com.darcklh.louise.Model.GoCqhttp.RequestPost;
 import com.darcklh.louise.Model.Louise.Group;
+import com.darcklh.louise.Model.Louise.User;
 import com.darcklh.louise.Model.Messages.InMessage;
 import com.darcklh.louise.Model.Messages.Message;
 import com.darcklh.louise.Model.R;
+import com.darcklh.louise.Model.ReplyException;
+import com.darcklh.louise.Model.Saito.FeatureInfo;
 import com.darcklh.louise.Model.Saito.PluginInfo;
+import com.darcklh.louise.Model.VO.FeatureInfoMin;
 import com.darcklh.louise.Service.FeatureInfoService;
+import com.darcklh.louise.Service.GroupService;
 import com.darcklh.louise.Service.Impl.FeatureInfoImpl;
+import com.darcklh.louise.Service.UserService;
 import com.darcklh.louise.Utils.*;
 import com.mysql.cj.protocol.x.Notice;
 import lombok.extern.slf4j.Slf4j;
@@ -20,15 +27,14 @@ import org.apache.ibatis.annotations.Param;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Controller;
+import org.springframework.util.StopWatch;
 
 import javax.annotation.PostConstruct;
 import javax.websocket.*;
 import javax.websocket.server.ServerEndpoint;
+import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -47,6 +53,13 @@ public class CqhttpWSController {
     FeatureInfoService featureInfoService;
 
     static CqhttpWSController cqhttpWSController;
+
+    @Autowired
+    GroupService groupService;
+    @Autowired
+    UserService userService;
+
+    DragonflyUtils dragonflyUtils = DragonflyUtils.getInstance();
 
     @PostConstruct
     public void init() {
@@ -67,6 +80,9 @@ public class CqhttpWSController {
 
     // 存放唯一的和 CQHTTP 的会话
     private Session session;
+    // 控制用户请求时间间隔
+    Map<Long, Map<Integer , Long>> userReqLog = new HashMap<>();
+    private final String featureIdKey = "model:feature:id:";
 
     public void onOpen(Session session) {
         this.session = session;
@@ -98,11 +114,35 @@ public class CqhttpWSController {
         }
     }
 
+    // 处理响应式方法
     public void handleMessagePost(MessagePost post) {
         InMessage inMessage = new InMessage(post);
         // 向所有监听模式功能发送消息
+
+        // 测试
+        for (Map.Entry<Integer, PluginInfo> entry : PluginManager.pluginInfos.entrySet()) {
+            HashMap<String, Method> map = entry.getValue().getMessagesMap();
+            if ( map.size() != 0) {
+                for (Map.Entry<String, Method> keyMethod : map.entrySet()) {
+                    if ( inMessage.getMessage().matches(keyMethod.getKey()) ) {
+                        if(!valid(inMessage, entry.getValue()))
+                            return;
+                        // 更新调用统计数据
+                        cqhttpWSController.featureInfoService.addCount(entry.getValue().getFeature_id(), inMessage.getGroup_id(), inMessage.getUser_id());
+                        LouiseThreadPool.execute(() -> {
+                            try {
+                                keyMethod.getValue().invoke(entry.getValue().getPluginService(), inMessage);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        });
+                    }
+                }
+            }
+        }
+
         Pattern pattern;
-        // TODO 使用正则表达式判断
+        // TODO 可以移除了
         for ( Map.Entry<Integer, PluginInfo> entry: PluginManager.pluginInfos.entrySet()) {
             if (entry.getValue().getType() != 0) {
                 pattern = Pattern.compile(entry.getValue().getCmd());
@@ -213,4 +253,126 @@ public class CqhttpWSController {
         void call(InMessage inMessage);
     }
 
+    private boolean valid(InMessage inMessage, PluginInfo pluginInfo) {
+
+        StopWatch stopWatch = new StopWatch();
+        stopWatch.start();
+        String userInfo = inMessage.getSender().getNickname() + "(" + inMessage.getUser_id() + ")";
+        // 权限校验
+        boolean tag = false;
+
+        FeatureInfo featureInfo = dragonflyUtils.get(featureIdKey + pluginInfo.getFeature_id(), FeatureInfo.class);
+        long userId = inMessage.getUser_id();
+        long groupId = inMessage.getGroup_id();
+        log.info("用户 {} 请求 {} at {}", inMessage.getSender().getNickname() + "(" + inMessage.getUser_id() + ")", pluginInfo.getName(), new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date().getTime()));
+
+        // 管理员和 Bot 的命令将不受限制
+        if (userId == Long.parseLong(LouiseConfig.BOT_ACCOUNT)) {
+            featureInfoService.addCount(pluginInfo.getFeature_id(), groupId, userId);
+            return true;
+        }
+
+        // 更新 Interval 控制
+        long now = new Date().getTime();
+        int featureId = pluginInfo.getFeature_id();
+
+        Map<Integer, Long> reqLogs = userReqLog.get(inMessage.getUser_id());
+        if (reqLogs != null) {
+            Long lastReq = reqLogs.get(featureId);
+            if(null != lastReq) {
+                long interval = now - lastReq;
+                long reqLimit = featureInfo.getInvoke_limit() * 1000L;
+                if (interval < reqLimit)
+                {
+                    Message.build(inMessage).reply().at().text("此功能还有 " + (reqLimit - interval) / 1000 + " 秒冷却").fall();
+                    return false;
+                }
+                else
+                    reqLogs.put(featureId, now);
+            } else
+                reqLogs.put(featureId, now);
+        } else {
+            Map<Integer, Long> userMap = new HashMap<>();
+            userMap.put(featureId, now);
+            userReqLog.put(inMessage.getUser_id(), userMap);
+        }
+        howMuchCost("| 请求限制校验耗时 {} 毫秒", stopWatch);
+        // 放行不需要鉴权的命令
+        if (featureInfo.getIs_auth() == 0) {
+            // 更新调用统计数据
+            featureInfoService.addCount(featureInfo.getFeature_id(), groupId, userId);
+            return true;
+        }
+        User user = cqhttpWSController.userService.selectById(userId);
+        // 判断用户是否存在并启用
+        if (user == null) {
+            log.info("未登记的用户 {}", userInfo);
+            Message.build(inMessage).reply().at().text("请在群内发送 !join 以启用你的使用权限").fall();
+            return false;
+        } else if (user.getIsEnabled() != 1) {
+            log.info("未启用的用户 {}", userInfo);
+            Message.build(inMessage).reply().at().text("你的权限已被暂时禁用").fall();
+            return false;
+        }
+
+        // 判断群聊还是私聊
+        if (inMessage.getGroup_id() != -1) {
+            Group group = cqhttpWSController.groupService.selectById(groupId);
+            if (group != null) {
+                if (group.getIs_enabled() != 1) {
+                    log.info("未启用的群组: {}", groupId);
+                    throw new ReplyException("主人不准露易丝在这个群里说话哦");
+                }
+            } else {
+                log.info("未注册的群组: {}", groupId);
+                throw new ReplyException("群聊还没有在露易丝中注册哦");
+            }
+
+            List<FeatureInfoMin> featureInfoMins = cqhttpWSController.featureInfoService.findWithRoleId(group.getRole_id());
+            log.debug("| 群聊允许的功能列表: {}", formatList(featureInfoMins));
+            for ( FeatureInfoMin featureInfoMin: featureInfoMins) {
+                if (featureInfoMin.getFeature_id().equals(featureInfo.getFeature_id())) {
+                    tag = true;
+                    break;
+                }
+            }
+            if (!tag)
+                throw new ReplyException("这个群聊的权限不准用这个功能哦");
+        }
+
+        tag = false;
+
+        List<FeatureInfoMin> featureInfoMins = cqhttpWSController.featureInfoService.findWithRoleId(user.getRole_id());
+        log.debug("| 用户允许的功能列表: {}", formatList(featureInfoMins));
+        for ( FeatureInfoMin featureInfoMin: featureInfoMins) {
+            if (featureInfoMin.getFeature_id().equals(featureInfo.getFeature_id())) {
+                tag = true;
+                break;
+            }
+        }
+        if (!tag)
+            throw new ReplyException("你的权限还不准用这个功能哦");
+
+        //合法性校验通过 扣除CREDIT
+        int credit = cqhttpWSController.userService.minusCredit(userId, featureInfo.getCredit_cost());
+        if (credit < 0) {
+            throw new ReplyException("你的CREDIT余额不足哦");
+        }
+        howMuchCost("| 请求鉴权耗时 {} 毫秒", stopWatch);
+        return true;
+    }
+
+    private void howMuchCost(String prompt, StopWatch stopWatch) {
+        stopWatch.stop();
+        log.info(prompt, stopWatch.getTotalTimeMillis());
+        stopWatch.start();
+    }
+    private String formatList(List<FeatureInfoMin> list) {
+        StringBuilder result = new StringBuilder();
+        for ( FeatureInfoMin min : list) {
+            result.append(min.getFeature_id()).append(":").append(min.getFeature_name()).append("; ");
+        }
+        result.append("]");
+        return result.toString();
+    }
 }
