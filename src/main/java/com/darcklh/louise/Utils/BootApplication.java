@@ -68,7 +68,7 @@ public class BootApplication {
         bootDate = new Date();// 获取当前时间
 
         // 初始化线程池
-        new LouiseThreadPool(32, 64);
+        new LouiseThreadPool(16, 32);
 
         // 尝试从缓存中获取配置
         log.info("<--加载 MyLouise 配置信息-->");

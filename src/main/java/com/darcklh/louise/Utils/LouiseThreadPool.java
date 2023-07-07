@@ -1,6 +1,7 @@
 package com.darcklh.louise.Utils;
 
 import org.jetbrains.annotations.NotNull;
+import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 
 import java.util.concurrent.*;
 
@@ -23,7 +24,7 @@ public class LouiseThreadPool {
     public LouiseThreadPool(int corePoolSize, int maximumPoolSize) {
         this.corePoolSize = corePoolSize;
         this.maximumPoolSize = maximumPoolSize;
-        ThreadFactory factory = new LouiseThreadFactory();
+        ThreadFactory factory = new CustomizableThreadFactory("LouisePool-");
         BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>(999);
         executor = new ThreadPoolExecutor(corePoolSize, maximumPoolSize, 60, TimeUnit.SECONDS, queue, factory, new ThreadPoolExecutor.DiscardPolicy());
     }

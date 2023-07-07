@@ -34,6 +34,20 @@ class MyLouiseApplicationTests {
     private final HashMap<String, Method> commandMap = new HashMap<>();
     private final HashMap<String, Method> messageMap = new HashMap<>();
 
+    void testThreadPool() {
+        while (true) {
+            try {
+                Thread.sleep(100);
+                LouiseThreadPool.execute(() -> {
+                    System.out.println("我是" + Thread.currentThread().getName() + " 號線程");
+                    Thread.currentThread().interrupt();
+                });
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
     void testNewPlugin() {
         TestPlugin testPlugin = new TestPlugin();
         Class<? extends PluginService> plugin = testPlugin.getClass();

@@ -178,12 +178,18 @@ public class Message {
             long groupInfo = this.getGroup_id();
             String userInfo = this.getSender().getNickname() + "(" + this.getUser_id() + ")";
             if (groupInfo != -1)
-                log.info("发送到 群聊({}): {}", groupInfo, this.getMessages().size() == 0 ? this.getMessage().toString() : this.getMessages().toString());
+                log.info("发送到 群聊({}): {}", groupInfo, makeLogInfo(this.getMessages().size() == 0 ? this.getMessage().toString() : this.getMessages().toString()));
             else
-                log.info("发送到 私聊{}: {}", userInfo, this.getMessage().toString());
+                log.info("发送到 私聊({}): {}", userInfo, makeLogInfo(this.getMessage().toString()));
             r.send(this);
         }
         this.clear();
+    }
+
+    private String makeLogInfo(String logInfo) {
+        if (logInfo.length() >= 255)
+            logInfo = logInfo.substring(0, 255) + "...内容已省略";
+        return logInfo;
     }
 
     private void nodeToMessage(Message message, Node node) {
