@@ -46,6 +46,7 @@ public class CronTaskImpl extends ServiceImpl<CronTaskDao, CronTask> implements 
 
     /**
      * 查看已开启但还未执行的动态任务
+     *
      * @return
      */
     public List<String> getTaskList() {
@@ -86,7 +87,7 @@ public class CronTaskImpl extends ServiceImpl<CronTaskDao, CronTask> implements 
     public Runnable getRunnable(CronTask cronTask) {
         return () -> {
 
-            log.info("---执行动态任务 - " + cronTask.getTask_name() +  "---");
+            log.info("---执行动态任务 - " + cronTask.getTask_name() + "---");
             try {
                 log.info("系统时间 - " + LocalDateTime.now());
                 // 转化参数构造 InMessage 对象
@@ -95,12 +96,15 @@ public class CronTaskImpl extends ServiceImpl<CronTaskDao, CronTask> implements 
                 // 判断任务类型
                 switch (cronTask.getType()) {
                     // 0 系统任务
-                    case 0: break;
+                    case 0:
+                        break;
                     // 1 发送消息
                     case 1: {
                         in.setPost_type("message");
                         // r.sendMessage(in);
-                    }; break;
+                    }
+                    ;
+                    break;
                     // 2 执行功能
                     case 2: {
                         in.setPost_type("message");
@@ -110,7 +114,7 @@ public class CronTaskImpl extends ServiceImpl<CronTaskDao, CronTask> implements 
                         // 获取执行任务 QQ 对象数组
                         String[] targets = cronTask.getTarget().split(" ");
 
-                        for (String target: targets) {
+                        for (String target : targets) {
                             String[] params = target.split("-");
                             // target 中第一个字符代表群发或私发
                             Sender sender = new Sender();
@@ -121,11 +125,10 @@ public class CronTaskImpl extends ServiceImpl<CronTaskDao, CronTask> implements 
                                 in.setMessage_type("group");
                                 in.setUser_id(Long.parseLong(cronTask.getNumber()));
                                 in.setGroup_id(Long.parseLong(params[1]));
-                            }
-                            else {
+                            } else {
                                 in.setMessage_type("private");
                                 in.setUser_id(Long.parseLong(params[1]));
-                                in.setGroup_id((long)-1);
+                                in.setGroup_id((long) -1);
                             }
                             HttpEntity request = new HttpEntity<>(in, null);
                             JSONObject result = rest.postForObject("http://localhost:8099/louise/" + cronTask.getUrl(), request, JSONObject.class);

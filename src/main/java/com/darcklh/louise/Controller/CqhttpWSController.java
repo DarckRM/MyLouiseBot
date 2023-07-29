@@ -44,7 +44,7 @@ import java.util.regex.Pattern;
  * @date 2022/11/4 6:10
  * @Description
  */
-@ServerEndpoint(value="/go-cqhttp", decoders = { PostDecoder.class }, encoders = { PostEncoder.class })
+@ServerEndpoint(value = "/go-cqhttp", decoders = {PostDecoder.class}, encoders = {PostEncoder.class})
 @Slf4j
 @Component
 public class CqhttpWSController {
@@ -81,7 +81,7 @@ public class CqhttpWSController {
     // 存放唯一的和 CQHTTP 的会话
     private Session session;
     // 控制用户请求时间间隔
-    Map<Long, Map<Integer , Long>> userReqLog = new HashMap<>();
+    Map<Long, Map<Integer, Long>> userReqLog = new HashMap<>();
     private final String featureIdKey = "model:feature:id:";
 
     public void onOpen(Session session) {
@@ -97,7 +97,7 @@ public class CqhttpWSController {
 
     @OnError
     public void onError(Session session, Throwable error) {
-        log.error("go-cqhttp 错误 ,原因:"+error.getMessage());
+        log.error("go-cqhttp 错误 ,原因:" + error.getMessage());
         error.printStackTrace();
     }
 
@@ -107,10 +107,16 @@ public class CqhttpWSController {
         // TODO 暂时先跳过所有心跳反应，后续可以实现 BOT 状态监听
 
         switch (post.getPost_type()) {
-            case meta_event: return;
-            case message: handleMessagePost((MessagePost) post); return;
-            case notice: handleNoticePost((NoticePost) post); return;
-            case request: handleRequestPost((RequestPost) post);
+            case meta_event:
+                return;
+            case message:
+                handleMessagePost((MessagePost) post);
+                return;
+            case notice:
+                handleNoticePost((NoticePost) post);
+                return;
+            case request:
+                handleRequestPost((RequestPost) post);
         }
     }
 
@@ -122,12 +128,13 @@ public class CqhttpWSController {
         // 测试
         for (Map.Entry<Integer, PluginInfo> entry : PluginManager.pluginInfos.entrySet()) {
             HashMap<String, Method> map = entry.getValue().getMessagesMap();
-            if ( map.size() != 0) {
+            if (map.size() != 0) {
                 for (Map.Entry<String, Method> keyMethod : map.entrySet()) {
-                    if ( inMessage.getMessage().matches(keyMethod.getKey()) ) {
-                        if(!valid(inMessage, entry.getValue()))
+                    if (inMessage.getMessage().matches(keyMethod.getKey())) {
+                        if (!valid(inMessage, entry.getValue()))
                             return;
                         // 更新调用统计数据
+                        log.info("用户 {} 请求 {} at {}", inMessage.getSender().getNickname() + "(" + inMessage.getUser_id() + ")", entry.getValue().getName(), new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date().getTime()));
                         cqhttpWSController.featureInfoService.addCount(entry.getValue().getFeature_id(), inMessage.getGroup_id(), inMessage.getUser_id());
                         LouiseThreadPool.execute(() -> {
                             try {
@@ -143,7 +150,7 @@ public class CqhttpWSController {
 
         Pattern pattern;
         // TODO 可以移除了
-        for ( Map.Entry<Integer, PluginInfo> entry: PluginManager.pluginInfos.entrySet()) {
+        for (Map.Entry<Integer, PluginInfo> entry : PluginManager.pluginInfos.entrySet()) {
             if (entry.getValue().getType() != 0) {
                 pattern = Pattern.compile(entry.getValue().getCmd());
                 if (pattern.matcher(inMessage.getMessage()).find()) {
@@ -216,6 +223,7 @@ public class CqhttpWSController {
 
     /**
      * 指定超时时间和用户ID尝试获取用户发送的消息
+     *
      * @param callBack
      * @param userId
      * @param exceedTime
@@ -279,15 +287,13 @@ public class CqhttpWSController {
         Map<Integer, Long> reqLogs = userReqLog.get(inMessage.getUser_id());
         if (reqLogs != null) {
             Long lastReq = reqLogs.get(featureId);
-            if(null != lastReq) {
+            if (null != lastReq) {
                 long interval = now - lastReq;
                 long reqLimit = featureInfo.getInvoke_limit() * 1000L;
-                if (interval < reqLimit)
-                {
+                if (interval < reqLimit) {
                     Message.build(inMessage).reply().at().text("此功能还有 " + (reqLimit - interval) / 1000 + " 秒冷却").fall();
                     return false;
-                }
-                else
+                } else
                     reqLogs.put(featureId, now);
             } else
                 reqLogs.put(featureId, now);
@@ -330,7 +336,7 @@ public class CqhttpWSController {
 
             List<FeatureInfoMin> featureInfoMins = cqhttpWSController.featureInfoService.findWithRoleId(group.getRole_id());
             log.debug("| 群聊允许的功能列表: {}", formatList(featureInfoMins));
-            for ( FeatureInfoMin featureInfoMin: featureInfoMins) {
+            for (FeatureInfoMin featureInfoMin : featureInfoMins) {
                 if (featureInfoMin.getFeature_id().equals(featureInfo.getFeature_id())) {
                     tag = true;
                     break;
@@ -344,7 +350,7 @@ public class CqhttpWSController {
 
         List<FeatureInfoMin> featureInfoMins = cqhttpWSController.featureInfoService.findWithRoleId(user.getRole_id());
         log.debug("| 用户允许的功能列表: {}", formatList(featureInfoMins));
-        for ( FeatureInfoMin featureInfoMin: featureInfoMins) {
+        for (FeatureInfoMin featureInfoMin : featureInfoMins) {
             if (featureInfoMin.getFeature_id().equals(featureInfo.getFeature_id())) {
                 tag = true;
                 break;
@@ -367,9 +373,10 @@ public class CqhttpWSController {
         log.info(prompt, stopWatch.getTotalTimeMillis());
         stopWatch.start();
     }
+
     private String formatList(List<FeatureInfoMin> list) {
         StringBuilder result = new StringBuilder();
-        for ( FeatureInfoMin min : list) {
+        for (FeatureInfoMin min : list) {
             result.append(min.getFeature_id()).append(":").append(min.getFeature_name()).append("; ");
         }
         result.append("]");

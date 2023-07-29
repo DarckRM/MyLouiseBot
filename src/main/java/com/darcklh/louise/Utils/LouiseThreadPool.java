@@ -9,18 +9,21 @@ public class LouiseThreadPool {
     private final int corePoolSize;
     private final int maximumPoolSize;
     private static ExecutorService executor = null;
+
     private static final class LouiseThreadFactory implements ThreadFactory {
         @Override
         public Thread newThread(@NotNull Runnable r) {
             return new Thread(r);
         }
     }
+
     private final class LouiseRejectPolicy implements RejectedExecutionHandler {
         @Override
         public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
 
         }
     }
+
     public LouiseThreadPool(int corePoolSize, int maximumPoolSize) {
         this.corePoolSize = corePoolSize;
         this.maximumPoolSize = maximumPoolSize;

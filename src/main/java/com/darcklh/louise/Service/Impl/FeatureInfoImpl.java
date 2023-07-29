@@ -47,6 +47,7 @@ public class FeatureInfoImpl implements FeatureInfoService {
     private int count = 0;
 
     private boolean isUpdate = true;
+
     public boolean isUpdate() {
         return this.isUpdate;
     }
@@ -68,9 +69,9 @@ public class FeatureInfoImpl implements FeatureInfoService {
     @Override
     public String editBy(FeatureInfo featureInfo) {
 
-        String reply = "功能<" + featureInfo.getFeature_name() +">修改失败了！";
-        if(featureInfoDao.updateById(featureInfo) > 0)
-            reply = "功能<" + featureInfo.getFeature_name() +">修改成功！";
+        String reply = "功能<" + featureInfo.getFeature_name() + ">修改失败了！";
+        if (featureInfoDao.updateById(featureInfo) > 0)
+            reply = "功能<" + featureInfo.getFeature_name() + ">修改成功！";
         return reply;
     }
 
@@ -78,9 +79,9 @@ public class FeatureInfoImpl implements FeatureInfoService {
     public String add(FeatureInfo featureInfo) {
 
         featureInfo.setIs_enabled(-1);
-        String reply = "功能<" + featureInfo.getFeature_name() +">添加失败了！";
+        String reply = "功能<" + featureInfo.getFeature_name() + ">添加失败了！";
         if (featureInfoDao.insert(featureInfo) > 0)
-            reply = "功能<" + featureInfo.getFeature_name() +">添加成功！";
+            reply = "功能<" + featureInfo.getFeature_name() + ">添加成功！";
         return reply;
     }
 
@@ -91,7 +92,7 @@ public class FeatureInfoImpl implements FeatureInfoService {
     public String switchStatus(Integer feature_id, String feature_name) {
         String reply = "变更状态失败";
         if (featureInfoDao.switchStatus(feature_id) == 1) {
-            reply = isEnabled(feature_id) == 1 ? "功能<"+feature_name+">已启用" : "功能<"+feature_name+">已禁用";
+            reply = isEnabled(feature_id) == 1 ? "功能<" + feature_name + ">已启用" : "功能<" + feature_name + ">已禁用";
         }
         return reply;
     }
@@ -121,7 +122,7 @@ public class FeatureInfoImpl implements FeatureInfoService {
                 array.addAll(mins);
                 dragonflyUtils.set(featureMinKeyRoleId + roleId, array);
             } else {
-                for ( Object min : array)
+                for (Object min : array)
                     mins.add(JSONObject.parseObject(min.toString(), FeatureInfoMin.class));
                 log.debug("用户命中缓存");
             }

@@ -76,8 +76,7 @@ public class BootApplication {
         if (list != null) {
             log.info("已从缓存中获取 " + list.size() + " 条系统配置");
             LouiseConfig.refreshConfig(list);
-        }
-        else {
+        } else {
             list = sysConfigDao.selectList(null);
             dragonflyUtils.set("sys-config", JSONObject.toJSONString(list));
             LouiseConfig.refreshConfig(list);
@@ -118,7 +117,7 @@ public class BootApplication {
         List<Role> roles = roleService.findBy();
         if (!roles.isEmpty()) {
             JSONArray array = new JSONArray();
-            for ( Role role : roles) {
+            for (Role role : roles) {
                 List<FeatureInfoMin> mins = featureInfoService.findWithRoleId(role.getRole_id());
                 array.addAll(mins);
                 dragonflyUtils.set(featureMinKey + role.getRole_id(), array);
@@ -138,7 +137,7 @@ public class BootApplication {
             msg.text("启动时间 " + bootDate + " Louise 系统已启动\n")
                     .text(result.getMsg())
                     .text("\n成功加载了 " + cronTasks.size() + " 个计划任务")
-            .send();
+                    .send();
         } catch (Exception e) {
             log.info("未能建立与 Cqhttp 的连接 - Louise 系统已启动");
         }
