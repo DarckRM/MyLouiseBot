@@ -1,11 +1,15 @@
 package com.darcklh.louise;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.darcklh.louise.Api.FileControlApi;
 import com.darcklh.louise.Model.Annotation.LouisePlugin;
 import com.darcklh.louise.Model.Annotation.OnCommand;
 import com.darcklh.louise.Model.Annotation.OnMessage;
 import com.darcklh.louise.Model.Messages.Message;
+import com.darcklh.louise.Model.Saito.FeatureStatic;
 import com.darcklh.louise.Model.Saito.PluginInfo;
+import com.darcklh.louise.Model.VO.FeatureInfoMin;
 import com.darcklh.louise.Service.PluginService;
 import com.darcklh.louise.Utils.DragonflyUtils;
 import com.darcklh.louise.Utils.EncryptUtils;
@@ -22,10 +26,9 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
-import java.util.Base64;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.sql.Timestamp;
+import java.util.*;
+import java.util.function.Function;
 
 @Slf4j
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -33,6 +36,27 @@ class MyLouiseApplicationTests {
 
     private final HashMap<String, Method> commandMap = new HashMap<>();
     private final HashMap<String, Method> messageMap = new HashMap<>();
+
+
+    void testRedisCache() {
+        DragonflyUtils du = DragonflyUtils.getInstance();
+        FeatureInfoMin min = new FeatureInfoMin();
+        min.setFeature_id(1);
+        min.setFeature_name("hello");
+        min.setFeature_url("porn_hub.com");
+        Function<List<String>, List<JSONObject>> h = values -> {
+            List<JSONObject> return_list = new ArrayList<>();
+            values.forEach(value -> return_list.add(JSONObject.parseObject(value)));
+            return return_list;
+        };
+        for (JSONObject one : du.list("aka", h)) {
+            System.out.println(one.toString());
+        }
+//        dragonflyUtils.lpush("aka", min);
+//        dragonflyUtils.lpush("aka", min);
+//        dragonflyUtils.lpush("aka", min);
+//        dragonflyUtils.lpush("aka", min);
+    }
 
     void testThreadPool() {
         while (true) {
@@ -64,12 +88,12 @@ class MyLouiseApplicationTests {
                     OnCommand annotation = m.getAnnotation(OnCommand.class);
                     for (String command : annotation.commands()) {
                         // 校验命令
-                        if ( command.length() > 12 ) {
+                        if (command.length() > 12) {
                             log.info(plugin.getName() + "." + m.getName() + ":" + command + " 命令过长 已略过");
                             continue;
                         }
 
-                        if ( command.length() == 0) {
+                        if (command.length() == 0) {
                             log.info(plugin.getName() + "." + m.getName() + ":" + command + " 命令非法 已略过");
                             continue;
                         }
@@ -82,12 +106,12 @@ class MyLouiseApplicationTests {
                     OnMessage annotation = m.getAnnotation(OnMessage.class);
                     for (String message : annotation.messages()) {
                         // 校验命令
-                        if ( message.length() > 64 ) {
+                        if (message.length() > 64) {
                             log.info(plugin.getName() + "." + m.getName() + ":" + message + " 表达式过长 已略过");
                             continue;
                         }
 
-                        if ( message.length() == 0) {
+                        if (message.length() == 0) {
                             log.info(plugin.getName() + "." + m.getName() + ":" + message + " 命令非法 已略过");
                             continue;
                         }
@@ -96,7 +120,6 @@ class MyLouiseApplicationTests {
                 }
             }
         }
-
 
 
         for (Map.Entry<String, Method> entry : commandMap.entrySet()) {
@@ -127,6 +150,7 @@ class MyLouiseApplicationTests {
                 .async();
         log.info(result);
     }
+
     public void testSR() {
         final String query = "role_id=100588143&server=prod_gf_cn";
         final String body = "{\"role_id\":\"100588143\",\"server\":\"prod_gf_cn\"}";
@@ -155,6 +179,7 @@ class MyLouiseApplicationTests {
         log.info(c);
         return t + "," + r + "," + c;
     }
+
     public void checkDS() {
         String b = "";
         final String q = "role_id=100588143&server=prod_gf_cn";

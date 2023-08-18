@@ -36,8 +36,6 @@ import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @author DarckLH
@@ -144,20 +142,6 @@ public class CqhttpWSController {
                             }
                         });
                     }
-                }
-            }
-        }
-
-        Pattern pattern;
-        // TODO 可以移除了
-        for (Map.Entry<Integer, PluginInfo> entry : PluginManager.pluginInfos.entrySet()) {
-            if (entry.getValue().getType() != 0) {
-                pattern = Pattern.compile(entry.getValue().getCmd());
-                if (pattern.matcher(inMessage.getMessage()).find()) {
-                    log.info("用户 {} 请求 {} at {}", inMessage.getSender().getNickname() + "(" + inMessage.getUser_id() + ")", entry.getValue().getName(), new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date().getTime()));
-                    // 更新调用统计数据
-                    cqhttpWSController.featureInfoService.addCount(entry.getValue().getFeature_id(), inMessage.getGroup_id(), inMessage.getUser_id());
-                    LouiseThreadPool.execute(() -> entry.getValue().getPluginService().service(inMessage));
                 }
             }
         }

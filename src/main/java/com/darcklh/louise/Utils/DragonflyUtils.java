@@ -14,7 +14,9 @@ import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.params.ScanParams;
 
 import javax.annotation.PostConstruct;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 
 /**
@@ -80,6 +82,8 @@ public class DragonflyUtils {
         // 如果存在
         config.setMaxIdle(maxIdle);
         config.setMaxTotal(maxActive);
+        if (password.equals(""))
+            password = null;
         pool = new JedisPool(config, host, port, timeout, password);
         INSTANCE = this;
     }
@@ -90,11 +94,17 @@ public class DragonflyUtils {
      * @param value
      * @return
      */
-    public int sadd(String key, Object value) {
-        Object o = actionDf((x) -> x.sadd(key, JSONObject.toJSONString(value)));
-        return 1;
+    public void lpush(String key, Object value) {
+        actionDf((redis) -> redis.lpush(key, JSONObject.toJSONString(value)));
     }
 
+    public <T, R> ArrayList<R> list(String key, Function<List<String>, List<R>> handler) {
+       return (ArrayList<R>) handler.apply(actionDf(dragon -> dragon.lrange(key, 0, -1)));
+    }
+
+    public int length(String key) {
+        return actionDf(dragon -> dragon.lrange(key, 0, -1).size());
+    }
 
     /**
      * jedis set方法，通过设置值过期时间exTime,单位:秒<br>
@@ -158,17 +168,7 @@ public class DragonflyUtils {
     }
 
     public String set(String key, int number) {
-        String result = null;
-        try {
-            jedis = pool.getResource();
-            result = jedis.set(key, String.valueOf(number));
-        } catch (Exception e) {
-            log.error("set key:{} value{} error", key, number, e);
-            return result;
-        }finally {
-            jedis.close();
-        }
-        return result;
+        return (String) actionDf((dragon) -> dragon.set(key, String.valueOf(number)));
     }
 
     public boolean set(String key, Object object) {
@@ -179,7 +179,7 @@ public class DragonflyUtils {
     }
 
     public <T> T get(String key, Class<T> tClass) {
-        return JSONObject.parseObject(get(key), tClass);
+        return (T) actionDf((dragon) -> JSONObject.parseObject(get(key), tClass));
     }
 
     /**
@@ -194,8 +194,8 @@ public class DragonflyUtils {
             jedis = pool.getResource();
             result = jedis.get(key);
         } catch (Exception e) {
-            log.error("set key:{}error", key, e);
-            return result;
+            log.error("set key:{} error", key, e);
+            return null;
         }finally {
             jedis.close();
         }
@@ -271,18 +271,27 @@ public class DragonflyUtils {
         }
     }
 
-    public Object actionDf(CallDf<Object> callDf) {
-        Object result = null;
+    public <T> T actionDf(CallDf<T> callDf) {
+        T result = null;
         try (Jedis jedis = pool.getResource()) {
             result = callDf.func(jedis);
         } catch (Exception e) {
             e.printStackTrace();
-            log.error("set key value error", e);
+            log.error("执行 actionDf 回调函数异常", e);
         }
+//        finally {
+//            jedis.close();
+//        }
         return result;
     }
 
     public interface CallDf<T> {
         T func(Jedis jedis);
     }
+
+    public interface handler<T, R> {
+        R handle(List<T> values);
+    }
+
+
 }

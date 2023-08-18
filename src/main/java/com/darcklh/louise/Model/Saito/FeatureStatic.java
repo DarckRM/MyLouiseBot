@@ -14,6 +14,13 @@ import java.sql.Timestamp;
 @Data
 public class FeatureStatic {
 
+    public FeatureStatic(long user_id, long group_id, int feature_id, Timestamp invoke_time) {
+        this.user_id = user_id;
+        this.group_id = group_id;
+        this.feature_id = feature_id;
+        this.invoke_time = invoke_time;
+    }
+
     @TableId(type = IdType.AUTO)
     private Integer invoke_id;
     private long user_id;

@@ -82,16 +82,8 @@ public class LouiseHandler implements HandlerInterceptor {
 
         boolean tag = false;
 
-        String featureKey = "model:feature:cmd:";
-
         // 获取请求的功能对象
-        FeatureInfo featureInfo = dragonflyUtils.get(featureKey + command, FeatureInfo.class);
-        if (featureInfo == null) {
-            featureInfo = featureInfoService.findWithFeatureCmd(command, userId);
-            if (featureInfo == null)
-                throw new ReplyException("未知的命令 " + command);
-        }
-
+        FeatureInfo featureInfo = featureInfoService.findWithFeatureCmd(command, userId);
         //判断功能是否启用
         if (featureInfo.getIs_enabled() != 1) {
             throw new ReplyException("功能<" + featureInfo.getFeature_name() + ">未启用");
@@ -110,27 +102,7 @@ public class LouiseHandler implements HandlerInterceptor {
             featureInfoService.addCount(featureInfo.getFeature_id(), groupId, userId);
             return true;
         }
-
-        // 更新 Interval 控制
-        long now = new Date().getTime();
-        int featureId = featureInfo.getFeature_id();
-        Map<Integer, Long> reqLogs = userReqLog.get(inMessage.getUser_id());
-        if (reqLogs != null) {
-            Long lastReq = reqLogs.get(featureId);
-            if(null != lastReq) {
-                long interval = now - lastReq;
-                long reqLimit = featureInfo.getInvoke_limit() * 1000L;
-                if (interval < reqLimit)
-                    throw new ReplyException("[CQ:at,qq=" + userId + "] 此功能还有 " + (reqLimit - interval) / 1000 + " 秒冷却");
-                else
-                    reqLogs.put(featureId, now);
-            } else
-                reqLogs.put(featureId, now);
-        } else {
-            Map<Integer, Long> userMap = new HashMap<>();
-            userMap.put(featureId, now);
-            userReqLog.put(inMessage.getUser_id(), userMap);
-        }
+        requestLimitCheck(featureInfo, inMessage);
         howMuchCost("| 请求限制校验耗时 {} 毫秒", stopWatch);
         // 放行不需要鉴权的命令
         if (featureInfo.getIs_auth() == 0) {
@@ -221,5 +193,28 @@ public class LouiseHandler implements HandlerInterceptor {
         stopWatch.stop();
         logger.info(prompt, stopWatch.getTotalTimeMillis());
         stopWatch.start();
+    }
+
+    private void requestLimitCheck(FeatureInfo featureInfo, InMessage inMessage) {
+        // 更新 Interval 控制
+        long now = new Date().getTime();
+        int featureId = featureInfo.getFeature_id();
+        Map<Integer, Long> reqLogs = userReqLog.get(inMessage.getUser_id());
+        if (reqLogs != null) {
+            Long lastReq = reqLogs.get(featureId);
+            if(null != lastReq) {
+                long interval = now - lastReq;
+                long reqLimit = featureInfo.getInvoke_limit() * 1000L;
+                if (interval < reqLimit)
+                    throw new ReplyException("[CQ:at,qq=" + inMessage.getUser_id() + "] 此功能还有 " + (reqLimit - interval) / 1000 + " 秒冷却");
+                else
+                    reqLogs.put(featureId, now);
+            } else
+                reqLogs.put(featureId, now);
+        } else {
+            Map<Integer, Long> userMap = new HashMap<>();
+            userMap.put(featureId, now);
+            userReqLog.put(inMessage.getUser_id(), userMap);
+        }
     }
 }

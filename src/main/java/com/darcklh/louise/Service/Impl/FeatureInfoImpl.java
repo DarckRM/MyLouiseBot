@@ -1,5 +1,6 @@
 package com.darcklh.louise.Service.Impl;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.darcklh.louise.Mapper.FeatureInfoDao;
@@ -21,6 +22,8 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * @author DarckLH
@@ -37,12 +40,11 @@ public class FeatureInfoImpl implements FeatureInfoService {
     @Autowired
     FeatureStaticDao featureStaticDao;
 
-    @Autowired
-    DragonflyUtils dragonflyUtils;
+    DragonflyUtils dragon = DragonflyUtils.getInstance();
 
-    private final String featureMinKeyRoleId = "model:feature_min:role_id:";
-    private final String featureCountKey = "op:feature_id_count:";
-    private final String featureStaticKey = "op:feature_static:";
+    private final String FEATURE_MIN_KEY_ROLE_ID = "model:feature_min:role_id:";
+    private final String FEATURE_COUNT_KEY = "op:feature_id_count:";
+    private final String FEATURE_STATIC_KEY = "op:feature_static:";
 
     private int count = 0;
 
@@ -114,13 +116,13 @@ public class FeatureInfoImpl implements FeatureInfoService {
         List<FeatureInfoMin> mins = new ArrayList<>();
         // 缓存的值是最新的
         if (isUpdate()) {
-            array = dragonflyUtils.get(featureMinKeyRoleId + roleId, JSONArray.class);
+            array = dragon.get(FEATURE_MIN_KEY_ROLE_ID + roleId, JSONArray.class);
             // 如果缓存中没有值则写入
             if (array == null) {
                 array = new JSONArray();
                 mins = featureInfoDao.findWithRoleId(roleId);
                 array.addAll(mins);
-                dragonflyUtils.set(featureMinKeyRoleId + roleId, array);
+                dragon.set(FEATURE_MIN_KEY_ROLE_ID + roleId, array);
             } else {
                 for (Object min : array)
                     mins.add(JSONObject.parseObject(min.toString(), FeatureInfoMin.class));
@@ -130,7 +132,7 @@ public class FeatureInfoImpl implements FeatureInfoService {
             array = new JSONArray();
             mins = featureInfoDao.findWithRoleId(roleId);
             array.addAll(mins);
-            dragonflyUtils.set(featureMinKeyRoleId + roleId, array);
+            dragon.set(FEATURE_MIN_KEY_ROLE_ID + roleId, array);
         }
         return mins;
     }
@@ -142,53 +144,53 @@ public class FeatureInfoImpl implements FeatureInfoService {
 
     @Override
     public void addCount(Integer feature_id, long group_id, long user_id) {
+        // 全局命令调用计数器
+        int count = dragon.length(FEATURE_STATIC_KEY);
         // 缓存操作记数器
-        count++;
-        String stringCount = dragonflyUtils.get(featureCountKey + feature_id);
+        String stringCount = dragon.get(FEATURE_COUNT_KEY + feature_id);
 
         // 从缓存中获取调用功能的计数 featureId:count 并更新缓存
         int featureCount = 1;
         if (stringCount != null)
             featureCount = Integer.parseInt(stringCount) + 1;
-        dragonflyUtils.set(featureCountKey + feature_id, featureCount);
+        dragon.set(FEATURE_COUNT_KEY + feature_id, featureCount);
 
-        // 向缓存中写入某功能被调用的一条记录
+        // 向缓存中追加某功能被调用的一条记录
         Timestamp now = new Timestamp(new Date().getTime());
-        dragonflyUtils.set(featureStaticKey + count + ":invoke_time", now.toString());
-        dragonflyUtils.set(featureStaticKey + count + ":user_id", user_id);
-        dragonflyUtils.set(featureStaticKey + count + ":feature_id", feature_id);
-        dragonflyUtils.set(featureStaticKey + count + ":group_id", group_id);
-
+        JSONObject feature_json = new JSONObject();
+        feature_json.put("invoke_time", now.toString());
+        feature_json.put("user_id", user_id);
+        feature_json.put("feature_id", feature_id);
+        feature_json.put("group_id", group_id);
+        dragon.lpush(FEATURE_STATIC_KEY, feature_json);
         // 达到缓存阈值后将缓存中的记录持久化到数据库
         if (count >= 15) {
             // 新开线程处理 可能会有线程安全问题
             log.info("开始 FeatureStatic 缓存数据持久化");
             HashMap<Integer, Integer> featureCountMap = new HashMap<>();
             FeatureStatic featureStatic;
-            for (int cacheCount = 1; cacheCount <= count; cacheCount++) {
-                // 从缓存中取出功能调用记录
-                featureStatic = new FeatureStatic();
-                int featureId = Integer.parseInt(dragonflyUtils.get(featureStaticKey + cacheCount + ":feature_id"));
-                Timestamp cacheNow = Timestamp.valueOf(dragonflyUtils.get(featureStaticKey + cacheCount + ":invoke_time"));
-
-                featureStatic.setInvoke_time(cacheNow);
-                featureStatic.setFeature_id(featureId);
-                featureStatic.setUser_id(Long.parseLong(dragonflyUtils.get(featureStaticKey + cacheCount + ":user_id")));
-                featureStatic.setGroup_id(Long.parseLong(dragonflyUtils.get(featureStaticKey + cacheCount + ":group_id")));
+            Function<List<String>, List<JSONObject>> h = values -> {
+                List<JSONObject> return_list = new ArrayList<>();
+                values.forEach(value -> return_list.add(JSONObject.parseObject(value)));
+                return return_list;
+            };
+            for (JSONObject one : dragon.list(FEATURE_STATIC_KEY, h)) {
+                 // 从缓存中取出功能调用记录
+                int featureId = one.getInteger("feature_id");
+                Timestamp cacheNow = Timestamp.valueOf(one.getString("invoke_time"));
+                featureStatic = new FeatureStatic(one.getInteger("user_id"), one.getInteger("group_id"), feature_id, cacheNow);
                 featureStaticDao.insert(featureStatic);
 
                 // 从缓存中取出功能调用计数
                 if (featureCountMap.get(featureId) != null)
-                    featureCountMap.put(featureId, Integer.parseInt(dragonflyUtils.get(featureCountKey + featureId)));
+                    featureCountMap.put(featureId, Integer.parseInt(dragon.get(FEATURE_COUNT_KEY + featureId)));
             }
-
             for (Map.Entry<Integer, Integer> entry : featureCountMap.entrySet()) {
                 featureInfoDao.addCount(entry.getKey(), entry.getValue());
             }
             // 清空缓存
-            dragonflyUtils.remove(featureCountKey);
-            dragonflyUtils.remove(featureStaticKey);
-            count = 0;
+            dragon.remove(FEATURE_COUNT_KEY);
+            dragon.remove(FEATURE_STATIC_KEY);
         }
     }
 }
