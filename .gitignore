@@ -2,6 +2,7 @@
 cache/
 /config
 src/main/resources/application-dev.yml
+src/main/resources/application-prod.yml
 plugins/
 logs/
 logs
