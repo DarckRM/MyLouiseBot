@@ -14,11 +14,13 @@ on:
     paths:
       - src/**
       - pom.xml
+      - .github/workflows/maven.yml
   pull_request:
     branches: [ "main" ]
     paths:
       - src/**
       - pom.xml
+      - .github/workflows/maven.yml
 
 jobs:
   build:
