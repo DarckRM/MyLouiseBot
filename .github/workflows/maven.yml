@@ -33,8 +33,8 @@ jobs:
     - name: Deploy to server
       uses: garygrossgarten/github-action-scp@release
       with:
-        local: target/*.jar
-        remote: home/darcklh/qqbot/MyLouise/
+        local: target/louise-0.1.7-dev.jar
+        remote: home/darcklh/qqbot/MyLouise/louise-0.1.7-dev.jar
         host: ${{ secrets.AZURE_HOST }}
         username: ${{ secrets.AZURE_USERNAME }}
         privateKey: ${{ secrets.AZURE_SSH_KEY }}
