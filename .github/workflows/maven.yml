@@ -34,10 +34,20 @@ jobs:
       uses: garygrossgarten/github-action-scp@release
       with:
         local: target/louise-0.1.7-dev.jar
-        remote: home/darcklh/qqbot/MyLouise/louise-0.1.7-dev.jar
+        remote: /home/darcklh/qqbot/MyLouise/louise-0.1.7-dev.jar
         host: ${{ secrets.AZURE_HOST }}
         username: ${{ secrets.AZURE_USERNAME }}
         privateKey: ${{ secrets.AZURE_SSH_KEY }}
+    - name: Run App
+      if: always()
+      uses: fifsky/ssh-action@master
+      with:
+        command: cd /home/darcklh/qqbot/MyLouise && ./restart.sh ./louise-0.1.7-dev.jar
+        host: ${{ secrets.AZURE_HOST }}
+        user: ${{ secrets.AZURE_USERNAME }}
+        key: ${{ secrets.AZURE_SSH_KEY }}
+        args: "-tt"
+        
     # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
     - name: Update dependency graph
       uses: advanced-security/maven-dependency-submission-action@571e99aab1055c2e71a1e2309b9691de18d6b7d6
