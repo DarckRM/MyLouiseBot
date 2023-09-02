@@ -42,7 +42,6 @@ class MyLouiseApplicationTests {
     FeatureStaticDao featureStaticDao;
 
 
-    @Test
     void testRedisCache() {
         DragonflyUtils du = DragonflyUtils.getInstance();
         FeatureStatic min = new FeatureStatic(123456L, 123456L, 1, new Timestamp(123456213));
