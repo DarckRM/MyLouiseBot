@@ -166,7 +166,7 @@ public class FeatureInfoImpl implements FeatureInfoService {
         // 达到缓存阈值后将缓存中的记录持久化到数据库
         if (count >= 15) {
             // 新开线程处理 可能会有线程安全问题
-            log.info("开始 FeatureStatic 缓存数据持久化");
+            log.info("开始 FeatureStatic 缓存数据log");
             HashMap<Integer, Integer> featureCountMap = new HashMap<>();
             FeatureStatic featureStatic;
             Function<List<String>, List<JSONObject>> h = values -> {
@@ -178,7 +178,8 @@ public class FeatureInfoImpl implements FeatureInfoService {
                  // 从缓存中取出功能调用记录
                 int featureId = one.getInteger("feature_id");
                 Timestamp cacheNow = Timestamp.valueOf(one.getString("invoke_time"));
-                featureStatic = new FeatureStatic(one.getInteger("user_id"), one.getInteger("group_id"), feature_id, cacheNow);
+                featureStatic = new FeatureStatic(one.getInteger("user_id"), one.getInteger("group_id"), one.getInteger("feature_id"), cacheNow);
+                log.info("写入" + featureStatic.getFeature_id() + "中");
                 featureStaticDao.insert(featureStatic);
 
                 // 从缓存中取出功能调用计数

@@ -200,7 +200,7 @@ public class UserImpl extends ServiceImpl<UserDao, User> implements UserService 
 
         if (creditEditCount == 30) {
             LouiseThreadPool.execute(() -> {
-                log.info("开始 Credit 缓存数据持久化");
+                log.info("log Credit 缓存数据持久化");
                 List<String> ids = dragonflyUtils.scan(creditLogKey);
                 List<User> users = userDao.selectBatchIds(ids);
                 for (User user : users) {

@@ -3,6 +3,7 @@ package com.darcklh.louise;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.darcklh.louise.Api.FileControlApi;
+import com.darcklh.louise.Mapper.FeatureStaticDao;
 import com.darcklh.louise.Model.Annotation.LouisePlugin;
 import com.darcklh.louise.Model.Annotation.OnCommand;
 import com.darcklh.louise.Model.Annotation.OnMessage;
@@ -37,13 +38,15 @@ class MyLouiseApplicationTests {
     private final HashMap<String, Method> commandMap = new HashMap<>();
     private final HashMap<String, Method> messageMap = new HashMap<>();
 
+    @Autowired
+    FeatureStaticDao featureStaticDao;
 
+
+    @Test
     void testRedisCache() {
         DragonflyUtils du = DragonflyUtils.getInstance();
-        FeatureInfoMin min = new FeatureInfoMin();
-        min.setFeature_id(1);
-        min.setFeature_name("hello");
-        min.setFeature_url("porn_hub.com");
+        FeatureStatic min = new FeatureStatic(123456L, 123456L, 1, new Timestamp(123456213));
+        min.setInvoke_id(0);
         Function<List<String>, List<JSONObject>> h = values -> {
             List<JSONObject> return_list = new ArrayList<>();
             values.forEach(value -> return_list.add(JSONObject.parseObject(value)));
@@ -51,11 +54,8 @@ class MyLouiseApplicationTests {
         };
         for (JSONObject one : du.list("aka", h)) {
             System.out.println(one.toString());
+            featureStaticDao.insert(min);
         }
-//        dragonflyUtils.lpush("aka", min);
-//        dragonflyUtils.lpush("aka", min);
-//        dragonflyUtils.lpush("aka", min);
-//        dragonflyUtils.lpush("aka", min);
     }
 
     void testThreadPool() {

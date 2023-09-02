@@ -84,6 +84,9 @@ public class LouiseHandler implements HandlerInterceptor {
 
         // 获取请求的功能对象
         FeatureInfo featureInfo = featureInfoService.findWithFeatureCmd(command, userId);
+        if (featureInfo == null) {
+            throw new ReplyException("未知的命令 " + command);
+        }
         //判断功能是否启用
         if (featureInfo.getIs_enabled() != 1) {
             throw new ReplyException("功能<" + featureInfo.getFeature_name() + ">未启用");
