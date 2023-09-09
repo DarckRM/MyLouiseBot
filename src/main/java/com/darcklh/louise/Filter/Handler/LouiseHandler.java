@@ -1,4 +1,5 @@
 package com.darcklh.louise.Filter.Handler;
+
 import com.alibaba.fastjson.JSON;
 import com.darcklh.louise.Config.LouiseConfig;
 import com.darcklh.louise.Model.Louise.Group;
@@ -36,21 +37,16 @@ public class LouiseHandler implements HandlerInterceptor {
     Logger logger = LoggerFactory.getLogger(LouiseHandler.class);
 
     // 控制用户请求时间间隔
-    Map<Long, Map<Integer , Long>> userReqLog = new HashMap<>();
-
-    @Autowired
-    DragonflyUtils dragonflyUtils;
-
+    Map<Long, Map<Integer, Long>> userReqLog = new HashMap<>();
     @Autowired
     UserService userService;
-
     @Autowired
     GroupService groupService;
     @Autowired
     FeatureInfoService featureInfoService;
-
     @Autowired
     PluginInfoService pluginInfoService;
+
     @Override
     public boolean preHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull Object o) throws Exception {
 
@@ -64,8 +60,8 @@ public class LouiseHandler implements HandlerInterceptor {
         InMessage inMessage = JSON.parseObject(body).toJavaObject(InMessage.class);
 
         long groupId = inMessage.getGroup_id();
-        String nickname = inMessage.getSender().getNickname();
         long userId = inMessage.getUser_id();
+        String nickname = inMessage.getSender().getNickname();
         String message = inMessage.getMessage();
         String userInfo = nickname + "(" + userId + ")";
 
@@ -77,7 +73,7 @@ public class LouiseHandler implements HandlerInterceptor {
         if (command.contains("/"))
             command = command.substring(0, command.indexOf("/") + 1) + "{%";
         else
-        // 如果不携带参数，那么构造命令是否允许无参请求查询条件
+            // 如果不携带参数，那么构造命令是否允许无参请求查询条件
             command += " %";
 
         boolean tag = false;
@@ -138,7 +134,7 @@ public class LouiseHandler implements HandlerInterceptor {
 
             List<FeatureInfoMin> featureInfoMins = featureInfoService.findWithRoleId(group.getRole_id());
             logger.debug("| 群聊允许的功能列表: {}", formatList(featureInfoMins));
-            for ( FeatureInfoMin featureInfoMin: featureInfoMins) {
+            for (FeatureInfoMin featureInfoMin : featureInfoMins) {
                 if (featureInfoMin.getFeature_id().equals(featureInfo.getFeature_id())) {
                     tag = true;
                     break;
@@ -152,7 +148,7 @@ public class LouiseHandler implements HandlerInterceptor {
 
         List<FeatureInfoMin> featureInfoMins = featureInfoService.findWithRoleId(user.getRole_id());
         logger.debug("| 用户允许的功能列表: {}", formatList(featureInfoMins));
-        for ( FeatureInfoMin featureInfoMin: featureInfoMins) {
+        for (FeatureInfoMin featureInfoMin : featureInfoMins) {
             if (featureInfoMin.getFeature_id().equals(featureInfo.getFeature_id())) {
                 tag = true;
                 break;
@@ -185,7 +181,7 @@ public class LouiseHandler implements HandlerInterceptor {
 
     private String formatList(List<FeatureInfoMin> list) {
         StringBuilder result = new StringBuilder();
-        for ( FeatureInfoMin min : list) {
+        for (FeatureInfoMin min : list) {
             result.append(min.getFeature_id()).append(":").append(min.getFeature_name()).append("; ");
         }
         result.append("]");
@@ -205,7 +201,7 @@ public class LouiseHandler implements HandlerInterceptor {
         Map<Integer, Long> reqLogs = userReqLog.get(inMessage.getUser_id());
         if (reqLogs != null) {
             Long lastReq = reqLogs.get(featureId);
-            if(null != lastReq) {
+            if (null != lastReq) {
                 long interval = now - lastReq;
                 long reqLimit = featureInfo.getInvoke_limit() * 1000L;
                 if (interval < reqLimit)

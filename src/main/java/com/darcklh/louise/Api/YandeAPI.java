@@ -10,9 +10,9 @@ import com.darcklh.louise.Model.Messages.Message;
 import com.darcklh.louise.Model.Messages.Node;
 import com.darcklh.louise.Model.Messages.OutMessage;
 import com.darcklh.louise.Model.MultiThreadTask.DownloadPicTask;
-import com.darcklh.louise.Model.R;
 import com.darcklh.louise.Model.ReplyException;
 import com.darcklh.louise.Service.BooruTagsService;
+import com.darcklh.louise.Service.MultiTaskService;
 import com.darcklh.louise.Service.UserService;
 import com.darcklh.louise.Utils.*;
 import lombok.extern.slf4j.Slf4j;
@@ -23,15 +23,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ThreadFactory;
-import java.util.regex.Pattern;
 
 /**
  * @author DarckLH
@@ -48,18 +43,16 @@ public class YandeAPI {
     FileControlApi fileControlApi;
 
     @Autowired
-    private UserService userService;
+    UserService userService;
 
     @Autowired
-    private BooruTagsService booruTagsService;
+    BooruTagsService booruTagsService;
 
     @Autowired
     DragonflyUtils dragonflyUtils;
 
     /**
      * 向数据库追加一条图站词条对照记录
-     * @param inMessage
-     * @return
      */
     @RequestMapping("louise/yande/add")
     public JSONObject addBooruTag(@RequestBody InMessage inMessage) {
@@ -139,8 +132,6 @@ public class YandeAPI {
 
     /**
      * 提供 Booru 请求的一些帮助
-     * @param inMessage
-     * @return
      */
     @RequestMapping("louise/yande/help")
     public void booruHelp(@RequestBody InMessage inMessage) {
@@ -164,14 +155,12 @@ public class YandeAPI {
         msg = inMessage.getMessage().split(" ");
         if (msg.length <= 1)
             throw new ReplyException("参数错误，请按如下格式尝试 !konachan/tags [参数]");
-        return requestTags(msg, "https://konachan.com/tag.json?name=", "konachan", inMessage);
+        return requestTags(msg, "https://konachan.com/tag.json?name=", inMessage);
     }
 
 
     /**
      * 根据 Tag 返回可能的 Tags 列表
-     * @param inMessage
-     * @return
      */
     @RequestMapping("louise/yande/tags")
     public JSONObject yandeTags(@RequestBody InMessage inMessage) {
@@ -181,14 +170,11 @@ public class YandeAPI {
         msg = inMessage.getMessage().split(" ");
         if (msg.length <= 1)
             throw new ReplyException("参数错误，请按如下格式尝试 !yande/tags [参数]");
-        return requestTags(msg, "https://yande.re/tag.json?name=", "yande", inMessage);
+        return requestTags(msg, "https://yande.re/tag.json?name=", inMessage);
     }
 
     /**
      * 获取涩涩的流行 Konachan 壁纸
-     * @param inMessage
-     * @param type
-     * @return
      */
     @RequestMapping("louise/konachan/{type}")
     public JSONObject konachanPic(@RequestBody InMessage inMessage, @PathVariable String type) {
@@ -205,18 +191,20 @@ public class YandeAPI {
 
     @RequestMapping("louise/konachan")
     public JSONObject konachanSearch(@RequestBody InMessage inMessage) {
-        return requestBooru("https://konachan.com/post.json?tags=", "Konachan", inMessage);
+        requestBooru("https://konachan.com/post.json?tags=", "Konachan", inMessage);
+        return null;
     }
 
     @RequestMapping("louise/yande")
     public JSONObject yandeSearch(@RequestBody InMessage inMessage) {
-        return requestBooru("https://yande.re/post.json?tags=", "Yande", inMessage);
+        requestBooru("https://yande.re/post.json?tags=", "Yande", inMessage);
+        return null;
     }
 
     /**
      *
-     * @param inMessage
-     * @param resultJsonArray
+     * @param inMessage cqhttp send in message
+     * @param resultJsonArray result as array
      * @param limit 如果是精选图集则只展示 15 张
      */
     private void sendYandeResult(InMessage inMessage, JSONArray resultJsonArray, Integer limit, Integer page, String fileOrigin, String[] tags_info, String final_tags) throws InterruptedException {
@@ -248,7 +236,7 @@ public class YandeAPI {
         }
         // 写入缓存
         dragonflyUtils.setEx(fileOrigin + " " + final_tags + page_nation, replyImgList, 3600);
-        List[] taskListPerThread = TaskDistributor.distributeTasks(taskList, 4);
+        List<MultiTaskService>[] taskListPerThread = TaskDistributor.distributeTasks(taskList, 4);
         List<WorkThread> workThreads = new ArrayList<>();
         for (int j = 0; j < taskListPerThread.length; j++) {
             WorkThread workThread = new WorkThread(taskListPerThread[j], j);
@@ -305,12 +293,12 @@ public class YandeAPI {
         return false;
     }
 
-    private JSONObject requestBooru(String url, String target, InMessage inMessage) {
+    private void requestBooru(String url, String target, InMessage inMessage) {
         Message msg = Message.build(inMessage);
         // 判断是否携带 Tags 参数
         if (inMessage.getMessage().length() < 7) {
             msg.reply().text("请至少携带一个 Tag 参数，像这样 !yande 参数1 参数2 页数 条数\n页数和条数可以不用指定").send();
-            return null;
+            return;
         }
 
         // 处理命令前缀
@@ -392,7 +380,7 @@ public class YandeAPI {
         // pageNation 只准接收两个参数
         if (tags.length > 12) {
             msg.reply().text("标签最大只允许 12 个哦").fall("过多的参数");
-            return null;
+            return;
         }
 
         // 修改最大条数
@@ -400,7 +388,6 @@ public class YandeAPI {
             pageNation[1] = "20";
 
         // 处理线程安全问题
-        String[] finalPageNation = pageNation;
         String[] finalTags = tags;
         String[] final_tags_info = tags_info;
         // 尝试从缓存获取
@@ -409,7 +396,7 @@ public class YandeAPI {
             log.info("已找到 Dragonfly 缓存");
             String page_nation = pageNation[0] + "页/" +  pageNation[1] + "条";
             instantSend(Message.build(inMessage), dragon, Arrays.toString(tags_info), page_nation);
-            return null;
+            return;
         }
 
         LouiseThreadPool.execute(() -> {
@@ -422,7 +409,7 @@ public class YandeAPI {
                 tagsParam.append(tag).append("+");
 
             StringBuilder uri = new StringBuilder();
-            uri.append(url).append(tagsParam.toString()).append("&limit=").append(finalPageNation[1]).append("&page=").append(finalPageNation[0]);
+            uri.append(url).append(tagsParam.toString()).append("&limit=").append(pageNation[1]).append("&page=").append(pageNation[0]);
 
             log.info("请求地址: " + uri);
             // 使用代理请求 Yande
@@ -435,12 +422,12 @@ public class YandeAPI {
                 return;
             }
             try {
-                sendYandeResult(inMessage, resultJsonArray, Integer.parseInt(finalPageNation[1]), Integer.parseInt(finalPageNation[0]), target, final_tags_info, Arrays.toString(finalTags));
+                sendYandeResult(inMessage, resultJsonArray, Integer.parseInt(pageNation[1]), Integer.parseInt(pageNation[0]), target, final_tags_info, Arrays.toString(finalTags));
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         });
-        return null;
+        return;
     }
 
     private JSONObject requestPopular(String uri, String target, String type, InMessage inMessage) {
@@ -486,7 +473,7 @@ public class YandeAPI {
         return null;
     }
 
-    private JSONObject requestTags(String[] msg, String uri, String target, InMessage inMessage) {
+    private JSONObject requestTags(String[] msg, String uri, InMessage inMessage) {
         String tag = msg[1];
 
         // 返回值
