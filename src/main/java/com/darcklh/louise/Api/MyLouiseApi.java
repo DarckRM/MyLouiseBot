@@ -3,8 +3,6 @@ package com.darcklh.louise.Api;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.darcklh.louise.Config.LouiseConfig;
-import com.darcklh.louise.Model.Annotation.OnCommand;
-import com.darcklh.louise.Model.Annotation.OnMessage;
 import com.darcklh.louise.Model.Louise.Group;
 import com.darcklh.louise.Model.Louise.Role;
 import com.darcklh.louise.Model.Louise.User;
@@ -15,7 +13,7 @@ import com.darcklh.louise.Model.Saito.PluginInfo;
 import com.darcklh.louise.Service.*;
 import com.darcklh.louise.Utils.LouiseThreadPool;
 import com.darcklh.louise.Utils.PluginManager;
-import com.darcklh.louise.Utils.UniqueGenerator;
+import com.darcklh.louise.Utils.Tool;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,13 +22,11 @@ import org.springframework.boot.web.servlet.error.ErrorController;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.*;
-import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Map;
 
 @Slf4j
 @RestController
@@ -292,7 +288,7 @@ public class MyLouiseApi implements ErrorController {
 
         URL url = null;
         String filePath = LouiseConfig.LOUISE_CACHE_IMAGE_LOCATION + "/";
-        String fileName = "Image_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")) + "_" + UniqueGenerator.generateShortUuid() + "." + "jpg";
+        String fileName = "Image_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")) + "_" + Tool.generateShortUuid() + "." + "jpg";
         String imageName = filePath + fileName;
         try {
             log.info("开始下载" + imageName + " 图片地址: " + uri);

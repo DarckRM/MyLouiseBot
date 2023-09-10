@@ -1,15 +1,11 @@
 package com.darcklh.louise.Api;
 
 import com.alibaba.fastjson.JSONObject;
-import com.darcklh.louise.Config.LouiseConfig;
 import com.darcklh.louise.Controller.CqhttpWSController;
 import com.darcklh.louise.Model.Messages.InMessage;
 import com.darcklh.louise.Model.Messages.Message;
-import com.darcklh.louise.Model.Messages.OutMessage;
-import com.darcklh.louise.Model.R;
-import com.darcklh.louise.Model.ReplyException;
 import com.darcklh.louise.Service.SearchPictureService;
-import com.darcklh.louise.Utils.UniqueGenerator;
+import com.darcklh.louise.Utils.Tool;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -71,8 +67,8 @@ public class SearchPictureApi{
      */
     private void searchPictureCenter(InMessage inMessage, String url){
         // TODO 线程名过长
-        new Thread(() -> searchPictureService.findWithSourceNAO(inMessage, url), UniqueGenerator.uniqueThreadName("", "NAO")).start();
-        // new Thread(() -> searchPictureService.findWithAscii2d(inMessage, url), UniqueGenerator.uniqueThreadName("", "A2d")).start();
+        new Thread(() -> searchPictureService.findWithSourceNAO(inMessage, url), Tool.uniqueThreadName("", "NAO")).start();
+        // new Thread(() -> searchPictureService.findWithAscii2d(inMessage, url), Tool.uniqueThreadName("", "A2d")).start();
 
     }
 

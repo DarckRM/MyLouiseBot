@@ -5,22 +5,11 @@ import com.darcklh.louise.Config.LouiseConfig;
 import com.darcklh.louise.Model.Result;
 import com.darcklh.louise.Service.PluginInfoService;
 import com.darcklh.louise.Utils.HttpProxy;
-import com.darcklh.louise.Utils.UniqueGenerator;
+import com.darcklh.louise.Utils.Tool;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpStatus;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RequestCallback;
 import org.springframework.web.client.RestTemplate;
@@ -36,7 +25,6 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
-import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * @author DarckLH
@@ -120,7 +108,7 @@ public class FileControlApi {
 
             String fileName = file.getOriginalFilename(); //获取上传的文件名
             String suffixName = fileName.substring(fileName.lastIndexOf("." )+ 1); //获取后缀名
-            fileName = "Image_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")) + "_" + UniqueGenerator.generateShortUuid() + "." + suffixName;
+            fileName = "Image_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")) + "_" + Tool.generateShortUuid() + "." + suffixName;
             result.setData(fileName);
             File dest = new File(new File(LouiseConfig.LOUISE_CACHE_IMAGE_LOCATION).getAbsolutePath() + "/" + fileName);
             if (!dest.getParentFile().exists()) {

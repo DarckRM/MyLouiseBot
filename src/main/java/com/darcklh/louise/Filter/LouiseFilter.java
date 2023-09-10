@@ -37,9 +37,9 @@ public class LouiseFilter implements Filter {
             //排除心跳检测以及静态资源
             String post_type = jsonObject.getString("post_type");
             switch (post_type) {
-                case "meta_event": {log.debug("心跳检测"); return;}
-                case "notice": {log.debug("暂不处理notice消息"); return;}
-                case "request": {log.debug("接收到 QQ 端的请求，类型: " + jsonObject.getString("request_type")); return;}
+                case "meta_event" -> { log.debug("心跳检测"); return; }
+                case "notice" -> { log.debug("暂不处理notice消息"); return; }
+                case "request" -> { log.debug("接收到 QQ 端的请求，类型: " + jsonObject.getString("request_type")); return; }
             }
 
             // 如果消息不以 ! 开头则排除，如果消息是 CQ 码形式也排除，交给 WS 处理
