@@ -249,14 +249,15 @@ public class CqhttpWSController {
 
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
-        String userInfo = inMessage.getSender().getNickname() + "(" + inMessage.getUser_id() + ")";
+        Message message = Message.build(inMessage);
+        String userInfo = message.getSender().getNickname() + "(" + message.getUser_id() + ")";
         // 权限校验
         boolean tag = false;
 
         FeatureInfo featureInfo = dragonflyUtils.get(featureIdKey + pluginInfo.getFeature_id(), FeatureInfo.class);
-        long userId = inMessage.getUser_id();
-        long groupId = inMessage.getGroup_id();
-        log.info("用户 {} 请求 {} at {}", inMessage.getSender().getNickname() + "(" + inMessage.getUser_id() + ")", pluginInfo.getName(), new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date().getTime()));
+        long userId = message.getUser_id();
+        long groupId = message.getGroup_id();
+        log.info("用户 {} 请求 {} at {}", message.getSender().getNickname() + "(" + message.getUser_id() + ")", pluginInfo.getName(), new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date().getTime()));
 
         // 管理员和 Bot 的命令将不受限制
         if (userId == Long.parseLong(LouiseConfig.BOT_ACCOUNT)) {
@@ -268,7 +269,7 @@ public class CqhttpWSController {
         long now = new Date().getTime();
         int featureId = pluginInfo.getFeature_id();
 
-        Map<Integer, Long> reqLogs = userReqLog.get(inMessage.getUser_id());
+        Map<Integer, Long> reqLogs = userReqLog.get(message.getUser_id());
         if (reqLogs != null) {
             Long lastReq = reqLogs.get(featureId);
             if (null != lastReq) {
@@ -311,11 +312,11 @@ public class CqhttpWSController {
             if (group != null) {
                 if (group.getIs_enabled() != 1) {
                     log.info("未启用的群组: {}", groupId);
-                    throw new ReplyException("主人不准露易丝在这个群里说话哦");
+                    Message.build(inMessage).reply().at().text("主人不准露易丝在这个群里说话哦").fall();
                 }
             } else {
                 log.info("未注册的群组: {}", groupId);
-                throw new ReplyException("群聊还没有在露易丝中注册哦");
+                Message.build(inMessage).reply().at().text("群聊还没有在露易丝中注册哦").fall();
             }
 
             List<FeatureInfoMin> featureInfoMins = cqhttpWSController.featureInfoService.findWithRoleId(group.getRole_id());
@@ -327,7 +328,7 @@ public class CqhttpWSController {
                 }
             }
             if (!tag)
-                throw new ReplyException("这个群聊的权限不准用这个功能哦");
+                Message.build(inMessage).reply().at().text("这个群聊的权限不准用这个功能哦").fall();
         }
 
         tag = false;
@@ -341,12 +342,12 @@ public class CqhttpWSController {
             }
         }
         if (!tag)
-            throw new ReplyException("你的权限还不准用这个功能哦");
+            Message.build(inMessage).reply().at().text("你的权限还不准用这个功能哦").fall();
 
         //合法性校验通过 扣除CREDIT
         int credit = cqhttpWSController.userService.minusCredit(userId, featureInfo.getCredit_cost());
         if (credit < 0) {
-            throw new ReplyException("你的CREDIT余额不足哦");
+            Message.build(inMessage).reply().at().text("你的CREDIT余额不足哦").fall();
         }
         howMuchCost("| 请求鉴权耗时 {} 毫秒", stopWatch);
         return true;
