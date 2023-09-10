@@ -6,6 +6,7 @@ import com.darcklh.louise.Model.Louise.Role;
 import com.darcklh.louise.Model.VO.FeatureInfoMin;
 import com.darcklh.louise.Model.VO.RoleFeatureId;
 import com.darcklh.louise.Service.RoleService;
+import com.darcklh.louise.Utils.DragonflyUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +25,12 @@ public class RoleImpl implements RoleService{
 
     @Autowired
     FeatureInfoDao featureInfoDao;
+
+    @Autowired
+    DragonflyUtils dragonflyUtils;
+
+    private final String FEATURE_MIN_KEY_ROLE_ID = "model:feature_min:role_id:";
+
 
     @Override
     public List<Role> findBy() {
@@ -46,6 +53,8 @@ public class RoleImpl implements RoleService{
     }
 
     public Integer delRoleFeature(Integer role_id) {
+        // 删除 Redis 缓存
+        dragonflyUtils.del(FEATURE_MIN_KEY_ROLE_ID + role_id);
         return roleDao.delRoleFeatureByRoleId(role_id);
     }
 
@@ -82,8 +91,9 @@ public class RoleImpl implements RoleService{
         return null;
     }
 
-    public String addRoleFeature(Integer role_id, Integer feature_id) {
-        roleDao.insertRoleFeature(role_id, feature_id);
+    public String addRoleFeatureList(Integer role_id, RoleFeatureId roleFeatureId) {
+        for (Integer featureId: roleFeatureId.getFeatureInfoList())
+            roleDao.insertRoleFeature(roleFeatureId.getRole_id(), featureId);
         return "";
     }
 

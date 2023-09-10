@@ -11,7 +11,7 @@ import com.darcklh.louise.Model.VO.RoleFeatureId;
 public interface RoleService extends BaseService<Role>{
     public String switchStatus(Integer role_id, String role_name);
     public Integer delRoleFeature(Integer role_id);
-    public String addRoleFeature(Integer role_id, Integer feature_id);
+    public String addRoleFeatureList(Integer role_id, RoleFeatureId roleFeatureId);
     public String edit(RoleFeatureId roleFeatureId);
     public Role selectById(Integer role_id);
 

@@ -1,10 +1,14 @@
 package com.darcklh.louise.Controller;
 
+import com.alibaba.fastjson.JSONArray;
 import com.darcklh.louise.Model.Louise.Role;
 import com.darcklh.louise.Model.Result;
+import com.darcklh.louise.Model.Saito.FeatureInfo;
 import com.darcklh.louise.Model.VO.FeatureInfoMin;
 import com.darcklh.louise.Model.VO.RoleFeatureId;
+import com.darcklh.louise.Service.FeatureInfoService;
 import com.darcklh.louise.Service.RoleService;
+import com.darcklh.louise.Utils.DragonflyUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,6 +28,13 @@ public class RoleController {
 
     @Autowired
     RoleService roleService;
+
+    @Autowired
+    FeatureInfoService featureInfoService;
+
+    @Autowired
+    DragonflyUtils dragonflyUtils;
+    private final String FEATURE_MIN_KEY_ROLE_ID = "model:feature_min:role_id:";
 
     @RequestMapping("findBy")
     public Result<Role> findBy() {
@@ -46,12 +57,15 @@ public class RoleController {
 
         // 判断是否修改功能权限列表
         if (type != null) {
-
             // 清除原本的 role-feature 信息
             int delCounts = roleService.delRoleFeature(roleFeatureId.getRole_id());
+            Integer roleId = roleFeatureId.getRole_id();
             if (delCounts >= 0) {
-                for (Integer feature_id: roleFeatureId.getFeatureInfoList())
-                    roleService.addRoleFeature(roleFeatureId.getRole_id(), feature_id);
+                roleService.addRoleFeatureList(roleId, roleFeatureId);
+                List<FeatureInfoMin> mins = featureInfoService.findWithRoleId(roleId);
+                JSONArray array = new JSONArray();
+                array.addAll(mins);
+                dragonflyUtils.set(FEATURE_MIN_KEY_ROLE_ID + roleId, array);
                 result.setMsg(roleService.edit(roleFeatureId));
                 result.setCode(200);
             } else {
