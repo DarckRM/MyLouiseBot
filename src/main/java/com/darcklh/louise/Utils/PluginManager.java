@@ -4,6 +4,7 @@ import com.darcklh.louise.Model.Annotation.LouisePlugin;
 import com.darcklh.louise.Model.Annotation.OnCommand;
 import com.darcklh.louise.Model.Annotation.OnMessage;
 import com.darcklh.louise.Model.Annotation.OnNotice;
+import com.darcklh.louise.Model.Enum.Environment;
 import com.darcklh.louise.Model.GoCqhttp.NoticePost;
 import com.darcklh.louise.Model.Saito.PluginInfo;
 import com.darcklh.louise.Service.PluginService;
@@ -54,7 +55,8 @@ public class PluginManager {
         PluginService pluginService = getInstance(pluginInfo);
 
         try {
-            if(pluginService.init()) {
+            // 以生产环境为条件初始化插件
+            if(pluginService.init(Environment.PROD)) {
                 log.info("结束 [" + pluginInfo.getName() + "---" + pluginInfo.getAuthor() +"] 初始化成功 <<<");
             } else
                 log.info(pluginInfo.getName() + " 加载失败");

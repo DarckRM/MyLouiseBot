@@ -1,6 +1,7 @@
 package com.darcklh.louise.Service;
 
 import com.alibaba.fastjson.JSONObject;
+import com.darcklh.louise.Model.Enum.Environment;
 import com.darcklh.louise.Model.Messages.InMessage;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
@@ -23,7 +24,7 @@ public interface PluginService {
      * 插件的初始化函数
      * @return boolean represent init status
      */
-    public boolean init();
+    public boolean init(Environment env);
 
     /**
      * 插件的重载函数

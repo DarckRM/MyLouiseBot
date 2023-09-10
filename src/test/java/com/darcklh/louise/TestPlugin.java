@@ -5,6 +5,7 @@ import com.darcklh.louise.Model.Annotation.LouisePlugin;
 import com.darcklh.louise.Model.Annotation.OnCommand;
 import com.darcklh.louise.Model.Annotation.OnMessage;
 import com.darcklh.louise.Model.Annotation.OnNotice;
+import com.darcklh.louise.Model.Enum.Environment;
 import com.darcklh.louise.Model.GoCqhttp.NoticePost;
 import com.darcklh.louise.Model.Messages.InMessage;
 import com.darcklh.louise.Model.Messages.Message;
@@ -49,7 +50,7 @@ public class TestPlugin implements PluginService {
     }
 
     @Override
-    public boolean init() {
+    public boolean init(Environment env) {
         return false;
     }
 
