@@ -32,11 +32,14 @@ import java.util.concurrent.ScheduledFuture;
 @Slf4j
 @Service
 public class CronTaskImpl extends ServiceImpl<CronTaskDao, CronTask> implements CronTaskService {
+
+    @Autowired
+    CronTaskDao cronTaskDao;
     /**
      * 以下两个都是线程安全的集合类。
      */
-    public Map<String, ScheduledFuture<?>> taskMap = new ConcurrentHashMap<>();
-    public List<String> taskList = new CopyOnWriteArrayList<String>();
+    public Map<Integer, ScheduledFuture<?>> taskMap = new ConcurrentHashMap<>();
+    public List<Integer> taskList = new CopyOnWriteArrayList<Integer>();
 
     private final ThreadPoolTaskScheduler syncScheduler;
 
@@ -49,7 +52,7 @@ public class CronTaskImpl extends ServiceImpl<CronTaskDao, CronTask> implements 
      *
      * @return
      */
-    public List<String> getTaskList() {
+    public List<Integer> getTaskList() {
         return taskList;
     }
 
@@ -62,8 +65,8 @@ public class CronTaskImpl extends ServiceImpl<CronTaskDao, CronTask> implements 
      */
     public boolean add(CronTask cronTask) {
         // 此处的逻辑是 ，如果当前已经有这个名字的任务存在，先删除之前的，再添加现在的。（即重复就覆盖）
-        if (null != taskMap.get(cronTask.getTask_name())) {
-            stop(cronTask.getTask_name());
+        if (null != taskMap.get(cronTask.getTask_id())) {
+            stop(cronTask.getTask_id());
         }
 
         // schedule :调度给定的Runnable ，在指定的执行时间调用它。
@@ -72,8 +75,8 @@ public class CronTaskImpl extends ServiceImpl<CronTaskDao, CronTask> implements 
         //任务 – 触发器触发时执行的 Runnable
         //startTime – 任务所需的执行时间（如果这是过去，则任务将立即执行，即尽快执行）
         ScheduledFuture<?> schedule = syncScheduler.schedule(getRunnable(cronTask), new CronTrigger(cronTask.getCron()));
-        taskMap.put(cronTask.getTask_name(), schedule);
-        taskList.add(cronTask.getTask_name());
+        taskMap.put(cronTask.getTask_id(), schedule);
+        taskList.add(cronTask.getTask_id());
         return true;
     }
 
@@ -146,17 +149,18 @@ public class CronTaskImpl extends ServiceImpl<CronTaskDao, CronTask> implements 
     /**
      * 停止任务
      *
-     * @param name
+     * @param id
      * @return
      */
-    public boolean stop(String name) {
-        if (null == taskMap.get(name)) {
+    public boolean stop(Integer id) {
+        if (null == taskMap.get(id)) {
             return false;
         }
-        ScheduledFuture<?> scheduledFuture = taskMap.get(name);
+        ScheduledFuture<?> scheduledFuture = taskMap.get(id);
         scheduledFuture.cancel(true);
-        taskMap.remove(name);
-        taskList.remove(name);
+        taskMap.remove(id);
+        taskList.remove(id);
+        cronTaskDao.switchStatus(id);
         return true;
     }
 }

@@ -1,8 +1,10 @@
 package com.darcklh.louise.Controller;
 
+import com.alibaba.fastjson.JSONObject;
 import com.darcklh.louise.Model.Result;
 import com.darcklh.louise.Model.Saito.CronTask;
 import com.darcklh.louise.Service.CronTaskService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,6 +16,7 @@ import java.util.List;
  * @Description 控制定时任务
  */
 
+@Slf4j
 @RestController
 @RequestMapping("/saito/cron-task")
 public class CronTaskController {
@@ -23,6 +26,7 @@ public class CronTaskController {
 
     /**
      * 返回所有的定时任务列表
+     *
      * @return
      */
     @GetMapping("/findAll")
@@ -44,27 +48,54 @@ public class CronTaskController {
 
     /**
      * 开启一个动态任务
+     *
      * @param cronTask
      * @return
      */
     @RequestMapping("/dynamic")
-    public String startDynamicTask(@RequestBody CronTask cronTask){
+    public String addCronTask(@RequestBody CronTask cronTask) {
         // 将这个添加到动态定时任务中去
         cronTaskService.add(cronTask);
-        return "动态任务:"+ cronTask.getTask_name()+" 已开启";
+        return "动态任务:" + cronTask.getTask_name() + " 已开启";
     }
 
     /**
-     *  根据名称 停止一个动态任务
-     * @param name
+     * 根据名称 停止一个动态任务
+     *
+     * @param id
      * @return
      */
-    @PostMapping("/{name}")
-    public String stopDynamicTask(@PathVariable("name") String name){
+    @DeleteMapping("/{id}")
+    public Result<String> deleteCronTask(@PathVariable("id") Integer id) {
+        log.info("准备禁用 " + id + " 定时任务");
         // 将这个添加到动态定时任务中去
-        if(!cronTaskService.stop(name)){
-            return "停止失败,任务已在进行中.";
+        Result<String> result = new Result<>();
+        if (!cronTaskService.stop(id)) {
+            result.setCode(200);
+            result.setMsg("停止失败, 任务已在进行中");
+            return result;
         }
-        return "任务已停止";
+        result.setCode(200);
+        result.setMsg("任务已停止");
+        return result;
+    }
+
+    @GetMapping("reload/{id}")
+    public Result<String> reloadCronTask(@PathVariable("id") Integer id) {
+        log.info("准备重载 " + id + " 定时任务");
+        Result<String> result = new Result<>();
+        try {
+            cronTaskService.stop(id);
+            CronTask cronTask = cronTaskService.getById(id);
+            cronTaskService.add(cronTask);
+            result.setCode(200);
+            result.setMsg("重载 " + id + " 定时任务成功");
+        } catch (Exception e) {
+            log.error("重载 " + id + " 定时任务时异常: " + e.getMessage() + "\n");
+            e.printStackTrace();
+            result.setMsg("重载 " + id + " 定时任务时异常: " + e.getMessage());
+            result.setCode(500);
+        }
+        return result;
     }
 }

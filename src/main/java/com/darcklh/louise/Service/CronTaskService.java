@@ -14,5 +14,5 @@ import org.springframework.stereotype.Service;
 public interface CronTaskService extends IService<CronTask> {
     public boolean add(CronTask cronTask);
     public Runnable getRunnable(CronTask cronTask);
-    public boolean stop(String name);
+    public boolean stop(Integer id);
 }

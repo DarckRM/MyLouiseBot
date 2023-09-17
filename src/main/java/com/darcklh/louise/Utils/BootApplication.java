@@ -35,8 +35,6 @@ import java.util.List;
 @Slf4j
 public class BootApplication {
 
-    @Autowired
-    PluginManager pluginManager;
 
     @Autowired
     SysConfigDao sysConfigDao;
