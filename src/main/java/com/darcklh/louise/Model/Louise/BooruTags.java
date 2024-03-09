@@ -16,6 +16,6 @@ public class BooruTags {
     private String origin_name;
     private String cn_name;
     private String alter_name;
-    private String produce;
+    private String producer;
     private String info;
 }

@@ -128,8 +128,13 @@ public class SearchPictureImpl implements SearchPictureService {
             }
         }
 
+        if (bestMatches.size() == 0) {
+            message.node(Node.build().text("低可能性结果。。")).send();
+            return;
+        }
+
         // 最大相似度低于 70 直接返回或者没有支持的来源
-        if (Float.parseFloat(maxSimilarity) < 70.0 || bestMatches.size() == 0) {
+        if (Float.parseFloat(maxSimilarity) < 70.0) {
             JSONObject bestHeader = bestMatches.get(0).getJSONObject("header");
             JSONObject bestData = bestMatches.get(0).getJSONObject("data");
 
@@ -137,10 +142,7 @@ public class SearchPictureImpl implements SearchPictureService {
                     + "\n相似度: " + bestHeader.getString("similarity")
                     + "\n具体信息:\n" + bestData.toJSONString() + "\n")
                     .image(bestHeader.getString("thumbnail")), 0).send();
-            // outMessage.getMessages().add(new Node(bestInfo, inMessage.getSelf_id()));
-//            if (badList.size() != 0)
-//                for (String one : badList)
-//                    outMessage.getMessages().add(new Node(one, inMessage.getSelf_id()));
+
             return;
         }
         // 格式化结果

@@ -46,8 +46,11 @@ public class PluginManager {
 
     public void loadPlugins(List<PluginInfo> pluginList) throws IOException, IllegalAccessException, InstantiationException {
         init(pluginList);
-        for(PluginInfo pluginInfo: pluginList)
+        for(PluginInfo pluginInfo: pluginList) {
+            if (pluginInfo.getIs_enabled() == 0)
+                continue;
             loadingPlugin(pluginInfo);
+        }
     }
 
     private void loadingPlugin(PluginInfo pluginInfo) throws IllegalAccessException, InstantiationException {

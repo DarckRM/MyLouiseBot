@@ -2,6 +2,7 @@ package com.darcklh.louise.Service;
 
 import com.darcklh.louise.Model.Saito.FeatureInfo;
 import com.darcklh.louise.Model.VO.FeatureInfoMin;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
@@ -11,6 +12,7 @@ import java.util.List;
  * @date 2021/9/28 15:40
  * @Description
  */
+@Service
 public interface FeatureInfoService extends BaseService<FeatureInfo>{
     public String switchStatus(Integer feature_id, String feature_name);
     public FeatureInfo findWithFeatureURL(String feature_url);

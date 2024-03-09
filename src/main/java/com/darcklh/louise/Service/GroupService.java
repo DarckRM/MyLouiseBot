@@ -2,6 +2,7 @@ package com.darcklh.louise.Service;
 
 import com.darcklh.louise.Model.Louise.Group;
 import com.darcklh.louise.Model.VO.GroupRole;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
@@ -10,6 +11,7 @@ import java.util.List;
  * @date 2021/9/28 19:47
  * @Description
  */
+@Service
 public interface GroupService extends BaseService<Group> {
 
     public List<GroupRole> findGroupRoleBy();

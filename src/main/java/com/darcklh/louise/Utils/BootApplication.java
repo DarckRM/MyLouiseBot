@@ -7,6 +7,7 @@ import com.darcklh.louise.Config.LouiseConfig;
 import com.darcklh.louise.Controller.CqhttpWSController;
 import com.darcklh.louise.Controller.PluginInfoController;
 import com.darcklh.louise.Controller.SaitoController;
+import com.darcklh.louise.Filter.InvokeValidator;
 import com.darcklh.louise.Mapper.SysConfigDao;
 import com.darcklh.louise.Mapper.CronTaskDao;
 import com.darcklh.louise.Model.Louise.Role;
@@ -34,8 +35,6 @@ import java.util.List;
 @Component
 @Slf4j
 public class BootApplication {
-
-
     @Autowired
     SysConfigDao sysConfigDao;
 
@@ -127,11 +126,12 @@ public class BootApplication {
 
         try {
             Message msg = Message.build();
-            msg.setGroup_id(-1L);
+//            msg.setGroup_id(-1L);
             Sender sender = new Sender();
             sender.setNickname("ADMIN");
             msg.setSender(sender);
             msg.setUser_id(Long.parseLong(LouiseConfig.LOUISE_ADMIN_NUMBER));
+            msg.setMessage_type("private");
             msg.text("启动时间 " + bootDate + " Louise 系统已启动\n")
                     .text(result.getMsg())
                     .text("\n成功加载了 " + cronTasks.size() + " 个计划任务")

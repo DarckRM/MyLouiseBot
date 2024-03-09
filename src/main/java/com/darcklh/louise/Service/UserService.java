@@ -4,9 +4,11 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.darcklh.louise.Model.Louise.User;
 import com.darcklh.louise.Model.VO.UserRole;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+@Service
 public interface UserService extends IService<User> {
 
     public List<UserRole> findAll();

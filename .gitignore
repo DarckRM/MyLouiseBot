@@ -7,6 +7,8 @@ plugins/
 logs/
 logs
 /application.yml
+application-dev.yml
+application-prod.yml
 ### Maven template
 target/
 pom.xml.tag

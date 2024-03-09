@@ -2,9 +2,11 @@ package com.darcklh.louise.Filter.Handler;
 
 import com.alibaba.fastjson.JSON;
 import com.darcklh.louise.Config.LouiseConfig;
+import com.darcklh.louise.Filter.InvokeValidator;
 import com.darcklh.louise.Model.Louise.Group;
 import com.darcklh.louise.Model.Louise.User;
 import com.darcklh.louise.Model.Messages.InMessage;
+import com.darcklh.louise.Model.Messages.Message;
 import com.darcklh.louise.Model.ReplyException;
 import com.darcklh.louise.Model.Saito.FeatureInfo;
 import com.darcklh.louise.Model.Saito.PluginInfo;
@@ -46,6 +48,8 @@ public class LouiseHandler implements HandlerInterceptor {
     FeatureInfoService featureInfoService;
     @Autowired
     PluginInfoService pluginInfoService;
+    @Autowired
+    InvokeValidator validator;
 
     @Override
     public boolean preHandle(@NotNull HttpServletRequest request, @NotNull HttpServletResponse response, @NotNull Object o) throws Exception {
@@ -59,11 +63,8 @@ public class LouiseHandler implements HandlerInterceptor {
 
         InMessage inMessage = JSON.parseObject(body).toJavaObject(InMessage.class);
 
-        long groupId = inMessage.getGroup_id();
         long userId = inMessage.getUser_id();
-        String nickname = inMessage.getSender().getNickname();
         String message = inMessage.getMessage();
-        String userInfo = nickname + "(" + userId + ")";
 
         //对command预处理
         String[] commands = message.split(" ");
@@ -76,7 +77,6 @@ public class LouiseHandler implements HandlerInterceptor {
             // 如果不携带参数，那么构造命令是否允许无参请求查询条件
             command += " %";
 
-        boolean tag = false;
 
         // 获取请求的功能对象
         FeatureInfo featureInfo = featureInfoService.findWithFeatureCmd(command, userId);
@@ -95,80 +95,9 @@ public class LouiseHandler implements HandlerInterceptor {
             return false;
         }
 
-        logger.info("用户 {} 请求 {} at {}", userInfo, featureInfo.getFeature_name(), new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date().getTime()));
-        // 管理员和 Bot 的命令将不受限制
-        if (userId == Long.parseLong(LouiseConfig.BOT_ACCOUNT)) {
-            featureInfoService.addCount(featureInfo.getFeature_id(), groupId, userId);
-            return true;
-        }
-        requestLimitCheck(featureInfo, inMessage);
-        howMuchCost("| 请求限制校验耗时 {} 毫秒", stopWatch);
-        // 放行不需要鉴权的命令
-        if (featureInfo.getIs_auth() == 0) {
-            // 更新调用统计数据
-            featureInfoService.addCount(featureInfo.getFeature_id(), groupId, userId);
-            return true;
-        }
-        User user = userService.selectById(userId);
-        // 判断用户是否存在并启用
-        if (user == null) {
-            logger.info("未登记的用户 {}", userInfo);
-            throw new ReplyException("请在群内发送!join以启用你的使用权限");
-        } else if (user.getIsEnabled() != 1) {
-            logger.info("未启用的用户 {}", userInfo);
-            throw new ReplyException("你的权限已被暂时禁用");
-        }
+        Message messageObj = new Message(inMessage);
+        return validator.valid(messageObj, featureInfo);
 
-        // 判断群聊还是私聊
-        if (inMessage.getGroup_id() != -1) {
-            Group group = groupService.selectById(groupId);
-            if (group != null) {
-                if (group.getIs_enabled() != 1) {
-                    logger.info("未启用的群组: {}", groupId);
-                    throw new ReplyException("主人不准露易丝在这个群里说话哦");
-                }
-            } else {
-                logger.info("未注册的群组: {}", groupId);
-                throw new ReplyException("群聊还没有在露易丝中注册哦");
-            }
-
-            List<FeatureInfoMin> featureInfoMins = featureInfoService.findWithRoleId(group.getRole_id());
-            logger.debug("| 群聊允许的功能列表: {}", formatList(featureInfoMins));
-            for (FeatureInfoMin featureInfoMin : featureInfoMins) {
-                if (featureInfoMin.getFeature_id().equals(featureInfo.getFeature_id())) {
-                    tag = true;
-                    break;
-                }
-            }
-            if (!tag)
-                throw new ReplyException("这个群聊的权限不准用这个功能哦");
-        }
-
-        tag = false;
-
-        List<FeatureInfoMin> featureInfoMins = featureInfoService.findWithRoleId(user.getRole_id());
-        logger.debug("| 用户允许的功能列表: {}", formatList(featureInfoMins));
-        for (FeatureInfoMin featureInfoMin : featureInfoMins) {
-            if (featureInfoMin.getFeature_id().equals(featureInfo.getFeature_id())) {
-                tag = true;
-                break;
-            }
-        }
-        if (!tag)
-            throw new ReplyException("你的权限还不准用这个功能哦");
-
-        //合法性校验通过 扣除CREDIT
-        int credit = userService.minusCredit(userId, featureInfo.getCredit_cost());
-        if (credit < 0) {
-            throw new ReplyException("你的CREDIT余额不足哦");
-        }
-        howMuchCost("| 请求鉴权耗时 {} 毫秒", stopWatch);
-        // 更新调用统计数据
-        featureInfoService.addCount(featureInfo.getFeature_id(), groupId, userId);
-
-        logger.info("| 功能 {} 消耗用户 {} CREDIT {}", featureInfo.getFeature_name(), userInfo, featureInfo.getCredit_cost());
-        howMuchCost("└ 解析此次请求耗时 {} 毫秒", stopWatch);
-        return true;
     }
 
     @Override

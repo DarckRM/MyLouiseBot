@@ -1,11 +1,14 @@
 package com.darcklh.louise.Model;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.darcklh.louise.Config.LouiseConfig;
 import com.darcklh.louise.Model.Messages.Message;
 import com.darcklh.louise.Model.Messages.OutMessage;
+import com.darcklh.louise.Utils.OkHttpUtils;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.conn.socket.PlainConnectionSocketFactory;
 import org.apache.ibatis.javassist.runtime.Inner;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -40,7 +43,7 @@ public class R {
 
     private boolean testConnWithBot() {
         Socket socket = new Socket();
-        SocketAddress address = new InetSocketAddress("127.0.0.1", 5700);
+        SocketAddress address = new InetSocketAddress("127.0.0.1", 3000);
         try {
             socket.setSoTimeout(1000);
             socket.connect(address, 1000);
@@ -114,19 +117,29 @@ public class R {
         if (!testConnWithBot())
             return null;
         headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<String> cqhttp = new HttpEntity<>(JSONObject.toJSONString(message), headers);
+
+        JSONObject obj = (JSONObject) JSONObject.toJSON(message);
+        // TODO 临时处理 group_id 为 -1 的情况
+        if (message.getGroup_id() == -1) {
+            obj.remove("group_id");
+        }
         // 开始请求
         log.debug("┌ 请求 cqhttp 接口: " + api);
-        JSONObject response = restTemplate.postForObject(LouiseConfig.BOT_BASE_URL + api, cqhttp, JSONObject.class);
+        String responseString = OkHttpUtils.builder().url(LouiseConfig.BOT_BASE_URL + api)
+                .addBody(obj.toJSONString())
+                .post(true)
+                .async();
 
+        JSONObject response = JSONObject.parseObject(responseString);
         // 校验请求结果
         if(!verifyRequest(response)) {
             String result = "露易丝被企鹅干扰了，请尝试私聊 (>д<)\n";
             message.text(result);
-            cqhttp = new HttpEntity<>(JSONObject.toJSONString(message), headers);
-
             log.info("| 发送错误原因:" + response.getString("wording") + " : " + response.getString("msg"));
-            restTemplate.postForObject(LouiseConfig.BOT_BASE_URL + "send_msg", cqhttp, JSONObject.class);
+            OkHttpUtils.builder().url(LouiseConfig.BOT_BASE_URL + api)
+                    .addBody(responseString)
+                    .post(true)
+                    .async();
         }
         this.refresh();
         log.info("└ 接口 " + api + " 返回消息:" + response);

@@ -58,4 +58,19 @@ public class InMessage {
         this.setSender(post.getSender());
     }
 
+    public InMessage(Message message) {
+        this.setTime(message.getTime());
+        this.setSelf_id(message.getSelf_id());
+        this.setPost_type(message.getPost_type());
+        this.setSub_type(message.getSub_type());
+        this.setMessage_id(message.getMessage_id());
+        this.setMessage_type(message.getMessage_type());
+        this.setUser_id(message.getUser_id());
+        this.setGroup_id(message.getGroup_id());
+        this.setMessage(message.getMessage().toString());
+        this.setRaw_message(message.getRaw_message());
+        this.setFont(message.getFont());
+        this.setSender(message.getSender());
+    }
+
 }

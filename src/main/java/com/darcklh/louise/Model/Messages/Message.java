@@ -1,5 +1,6 @@
 package com.darcklh.louise.Model.Messages;
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.darcklh.louise.Model.R;
 import com.darcklh.louise.Model.Sender;
@@ -7,6 +8,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
+import java.util.List;
 
 @Slf4j
 @Data
@@ -46,6 +48,8 @@ public class Message {
         this.setUser_id(inMessage.getUser_id());
         this.setSender(inMessage.getSender());
         this.setMessage_id(inMessage.getMessage_id());
+        this.setPost_type(inMessage.getPost_type());
+        this.setSub_type(inMessage.getSub_type());
     }
 
     public Message() {
@@ -233,6 +237,11 @@ public class Message {
 
     public interface MessageCallBack {
         void call(JSONObject result);
+    }
+
+    public String toJSONString(Message message) {
+        return "";
+
     }
 
 }

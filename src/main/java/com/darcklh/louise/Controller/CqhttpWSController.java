@@ -2,6 +2,7 @@ package com.darcklh.louise.Controller;
 
 import com.alibaba.fastjson.JSONObject;
 import com.darcklh.louise.Config.LouiseConfig;
+import com.darcklh.louise.Filter.InvokeValidator;
 import com.darcklh.louise.Model.GoCqhttp.AllPost;
 import com.darcklh.louise.Model.GoCqhttp.MessagePost;
 import com.darcklh.louise.Model.GoCqhttp.NoticePost;
@@ -42,26 +43,21 @@ import java.util.concurrent.ConcurrentHashMap;
  * @date 2022/11/4 6:10
  * @Description
  */
+@Component
 @ServerEndpoint(value = "/go-cqhttp", decoders = {PostDecoder.class}, encoders = {PostEncoder.class})
 @Slf4j
-@Component
 public class CqhttpWSController {
 
+    static CqhttpWSController ws;
     @Autowired
     FeatureInfoService featureInfoService;
-
-    static CqhttpWSController cqhttpWSController;
-
     @Autowired
-    GroupService groupService;
-    @Autowired
-    UserService userService;
-
+    InvokeValidator validator;
     DragonflyUtils dragonflyUtils = DragonflyUtils.getInstance();
 
     @PostConstruct
     public void init() {
-        cqhttpWSController = this;
+        ws = this;
     }
 
     // 和 CQHTTP Reverse WS 的连接状态
@@ -122,18 +118,18 @@ public class CqhttpWSController {
     public void handleMessagePost(MessagePost post) {
         InMessage inMessage = new InMessage(post);
         // 向所有监听模式功能发送消息
-
-        // 测试
         for (Map.Entry<Integer, PluginInfo> entry : PluginManager.pluginInfos.entrySet()) {
-            HashMap<String, Method> map = entry.getValue().getMessagesMap();
-            if (map.size() != 0) {
-                for (Map.Entry<String, Method> keyMethod : map.entrySet()) {
-                    if (inMessage.getMessage().matches(keyMethod.getKey())) {
-                        if (!valid(inMessage, entry.getValue()))
+            HashMap<String, Method> messageMap = entry.getValue().getMessagesMap();
+            if (messageMap.size() != 0) {
+                for (Map.Entry<String, Method> keyMethod : messageMap.entrySet()) {
+                    // TODO 以后使用消息段解析
+                    if (inMessage.getRaw_message().matches(keyMethod.getKey())) {
+                        FeatureInfo featureInfo = dragonflyUtils.get(featureIdKey + entry.getValue().getFeature_id(), FeatureInfo.class);
+                        if (!ws.validator.valid(new Message(inMessage), featureInfo))
                             return;
                         // 更新调用统计数据
                         log.info("用户 {} 请求 {} at {}", inMessage.getSender().getNickname() + "(" + inMessage.getUser_id() + ")", entry.getValue().getName(), new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date().getTime()));
-                        cqhttpWSController.featureInfoService.addCount(entry.getValue().getFeature_id(), inMessage.getGroup_id(), inMessage.getUser_id());
+                        ws.featureInfoService.addCount(entry.getValue().getFeature_id(), inMessage.getGroup_id(), inMessage.getUser_id());
                         LouiseThreadPool.execute(() -> {
                             try {
                                 keyMethod.getValue().invoke(entry.getValue().getPluginService(), inMessage);
@@ -243,128 +239,5 @@ public class CqhttpWSController {
 
     public interface GoCallBack {
         void call(InMessage inMessage);
-    }
-
-    private boolean valid(InMessage inMessage, PluginInfo pluginInfo) {
-
-        StopWatch stopWatch = new StopWatch();
-        stopWatch.start();
-        Message message = Message.build(inMessage);
-        String userInfo = message.getSender().getNickname() + "(" + message.getUser_id() + ")";
-        // 权限校验
-        boolean tag = false;
-
-        FeatureInfo featureInfo = dragonflyUtils.get(featureIdKey + pluginInfo.getFeature_id(), FeatureInfo.class);
-        long userId = message.getUser_id();
-        long groupId = message.getGroup_id();
-        log.info("用户 {} 请求 {} at {}", message.getSender().getNickname() + "(" + message.getUser_id() + ")", pluginInfo.getName(), new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date().getTime()));
-
-        // 管理员和 Bot 的命令将不受限制
-        if (userId == Long.parseLong(LouiseConfig.BOT_ACCOUNT)) {
-            featureInfoService.addCount(pluginInfo.getFeature_id(), groupId, userId);
-            return true;
-        }
-
-        // 更新 Interval 控制
-        long now = new Date().getTime();
-        int featureId = pluginInfo.getFeature_id();
-
-        Map<Integer, Long> reqLogs = userReqLog.get(message.getUser_id());
-        if (reqLogs != null) {
-            Long lastReq = reqLogs.get(featureId);
-            if (null != lastReq) {
-                long interval = now - lastReq;
-                long reqLimit = featureInfo.getInvoke_limit() * 1000L;
-                if (interval < reqLimit) {
-                    Message.build(inMessage).reply().at().text("此功能还有 " + (reqLimit - interval) / 1000 + " 秒冷却").fall();
-                    return false;
-                } else
-                    reqLogs.put(featureId, now);
-            } else
-                reqLogs.put(featureId, now);
-        } else {
-            Map<Integer, Long> userMap = new HashMap<>();
-            userMap.put(featureId, now);
-            userReqLog.put(inMessage.getUser_id(), userMap);
-        }
-        howMuchCost("| 请求限制校验耗时 {} 毫秒", stopWatch);
-        // 放行不需要鉴权的命令
-        if (featureInfo.getIs_auth() == 0) {
-            // 更新调用统计数据
-            featureInfoService.addCount(featureInfo.getFeature_id(), groupId, userId);
-            return true;
-        }
-        User user = cqhttpWSController.userService.selectById(userId);
-        // 判断用户是否存在并启用
-        if (user == null) {
-            log.info("未登记的用户 {}", userInfo);
-            Message.build(inMessage).reply().at().text("请在群内发送 !join 以启用你的使用权限").fall();
-            return false;
-        } else if (user.getIsEnabled() != 1) {
-            log.info("未启用的用户 {}", userInfo);
-            Message.build(inMessage).reply().at().text("你的权限已被暂时禁用").fall();
-            return false;
-        }
-
-        // 判断群聊还是私聊
-        if (inMessage.getGroup_id() != -1) {
-            Group group = cqhttpWSController.groupService.selectById(groupId);
-            if (group != null) {
-                if (group.getIs_enabled() != 1) {
-                    log.info("未启用的群组: {}", groupId);
-                    Message.build(inMessage).reply().at().text("主人不准露易丝在这个群里说话哦").fall();
-                }
-            } else {
-                log.info("未注册的群组: {}", groupId);
-                Message.build(inMessage).reply().at().text("群聊还没有在露易丝中注册哦").fall();
-            }
-
-            List<FeatureInfoMin> featureInfoMins = cqhttpWSController.featureInfoService.findWithRoleId(group.getRole_id());
-            log.debug("| 群聊允许的功能列表: {}", formatList(featureInfoMins));
-            for (FeatureInfoMin featureInfoMin : featureInfoMins) {
-                if (featureInfoMin.getFeature_id().equals(featureInfo.getFeature_id())) {
-                    tag = true;
-                    break;
-                }
-            }
-            if (!tag)
-                Message.build(inMessage).reply().at().text("这个群聊的权限不准用这个功能哦").fall();
-        }
-
-        tag = false;
-
-        List<FeatureInfoMin> featureInfoMins = cqhttpWSController.featureInfoService.findWithRoleId(user.getRole_id());
-        log.debug("| 用户允许的功能列表: {}", formatList(featureInfoMins));
-        for (FeatureInfoMin featureInfoMin : featureInfoMins) {
-            if (featureInfoMin.getFeature_id().equals(featureInfo.getFeature_id())) {
-                tag = true;
-                break;
-            }
-        }
-        if (!tag)
-            Message.build(inMessage).reply().at().text("你的权限还不准用这个功能哦").fall();
-
-        //合法性校验通过 扣除CREDIT
-        int credit = cqhttpWSController.userService.minusCredit(userId, featureInfo.getCredit_cost());
-        if (credit < 0) {
-            Message.build(inMessage).reply().at().text("你的CREDIT余额不足哦").fall();
-        }
-        howMuchCost("| 请求鉴权耗时 {} 毫秒", stopWatch);
-        return true;
-    }
-
-    private void howMuchCost(String prompt, StopWatch stopWatch) {
-        stopWatch.stop();
-        log.info(prompt, stopWatch.getTotalTimeMillis());
-        stopWatch.start();
-    }
-
-    private String formatList(List<FeatureInfoMin> list) {
-        StringBuilder result = new StringBuilder();
-        for (FeatureInfoMin min : list) {
-            result.append(min.getFeature_id()).append(":").append(min.getFeature_name()).append("; ");
-        }
-        result.append("]");
-        return result.toString();
     }
 }
