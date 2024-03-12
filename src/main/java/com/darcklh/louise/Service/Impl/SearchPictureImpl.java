@@ -57,15 +57,12 @@ public class SearchPictureImpl implements SearchPictureService {
     @Override
     public void findWithSourceNAO(InMessage inMessage, String url) {
         // 构造返回体
-        OutMessage outMessage = new OutMessage(inMessage);
         Message message = new Message(inMessage);
         String res;
         JSONObject sauceNAO;
 
         try {
             log.info("开始请求 sauceNAO 图片上传地址: " + url);
-//            Proxy proxy = new Proxy(Proxy.Type.SOCKS, new InetSocketAddress("127.0.0.1", 7890));
-            // sauceNAO = JSON.parseObject(restTemplate.getForObject(LouiseConfig.SOURCENAO_URL + "?url={url}&db={db}&api_key={api_key}&output_type={output_type}&numres={numres}", String.class, map));
             res = OkHttpUtils.builder().url(LouiseConfig.SOURCENAO_URL)
                     .addParam("url", url)
                     .addParam("api_key", LouiseConfig.SOURCENAO_API_KEY)
@@ -88,7 +85,7 @@ public class SearchPictureImpl implements SearchPictureService {
 
         JSONArray results = sauceNAO.getJSONArray("results");
         JSONObject header = new JSONObject();
-        JSONObject data = new JSONObject();
+        JSONObject data;
         Integer indexId = -9;
         String similarity = "";
         String maxSimilarity = "none";
@@ -100,30 +97,28 @@ public class SearchPictureImpl implements SearchPictureService {
         for (Object object : results) {
             // 获取单个结果的信息
             JSONObject result = (JSONObject) object;
-            header = result.getJSONObject("header");
+            JSONObject inHeader = result.getJSONObject("header");
             data = result.getJSONObject("data");
-            indexId = header.getInteger("index_id");
-            similarity = header.getString("similarity");
-            index_name = header.getString("index_name");
+            indexId = inHeader.getInteger("index_id");
+            similarity = inHeader.getString("similarity");
+            index_name = inHeader.getString("index_name");
             if (maxSimilarity.equals("none"))
                 maxSimilarity = similarity;
             // 跳过无法处理的来源
-            switch (header.getInteger("index_id")) {
-                case 5:
-                case 4:
-                case 12:
-                case 9:
-                case 25: {
-                    //  最佳结果
-                    if (bestMatches.size() == 0) {
-                        bestMatches.add(result);
-                        bestIndexId = indexId;
+            switch (inHeader.getInteger("index_id")) {
+                case 5, 4, 12, 9, 25 -> {
+                    {
+                        //  最佳结果
+                        if (bestMatches.size() == 0) {
+                            bestMatches.add(result);
+                            bestIndexId = indexId;
+                        }
                     }
-                }; break;
-                default: {
+                }
+                default -> {
                     message.node(Node.build().text("其他结果\n" + index_name + "\n相似度 " + similarity)
                             .text("\n" + data.toJSONString() + "\n")
-                            .image(header.getString("thumbnail")));
+                            .image(inHeader.getString("thumbnail")));
                 }
             }
         }
@@ -148,25 +143,18 @@ public class SearchPictureImpl implements SearchPictureService {
         // 格式化结果
         log.info("最佳结果: " + bestMatches.get(0).toString());
         data = bestMatches.get(0).getJSONObject("data");
+        header = bestMatches.get(0).getJSONObject("header");
         header.put("invoker", "NAO");
+        similarity = header.getString("similarity");
 
         //判断结果来源以及是否可以处理 如twitter之流来源很难获取图片 会补充URL以供查看
         switch (bestIndexId) {
-            //来自Pixiv
-            case 5:
-                handleFromPixiv(similarity, data, header, message).send();
-                break;
+            //来自 Pixiv
+            case 5 -> handleFromPixiv(similarity, data, header, message).send();
             //TODO 暂时禁用推特来源 未解决图片缓存路径问题
-            case 4:
-                handleFromTwitter(similarity, data, header, message).send();
-                break;
-            case 12:
-                handleFromYande(similarity, data, message).send();
-                break;
-            case 9:
-            case 25:
-                handleFromGelbooru(similarity, data, message).send();
-                break;
+            case 4 -> handleFromTwitter(similarity, data, header, message).send();
+            case 12 -> handleFromYande(similarity, data, message).send();
+            case 9, 25 -> handleFromGelbooru(similarity, data, message).send();
         }
     }
 

@@ -116,33 +116,4 @@ public class LouiseHandler implements HandlerInterceptor {
         result.append("]");
         return result.toString();
     }
-
-    private void howMuchCost(String prompt, StopWatch stopWatch) {
-        stopWatch.stop();
-        logger.info(prompt, stopWatch.getTotalTimeMillis());
-        stopWatch.start();
-    }
-
-    private void requestLimitCheck(FeatureInfo featureInfo, InMessage inMessage) {
-        // 更新 Interval 控制
-        long now = new Date().getTime();
-        int featureId = featureInfo.getFeature_id();
-        Map<Integer, Long> reqLogs = userReqLog.get(inMessage.getUser_id());
-        if (reqLogs != null) {
-            Long lastReq = reqLogs.get(featureId);
-            if (null != lastReq) {
-                long interval = now - lastReq;
-                long reqLimit = featureInfo.getInvoke_limit() * 1000L;
-                if (interval < reqLimit)
-                    throw new ReplyException("[CQ:at,qq=" + inMessage.getUser_id() + "] 此功能还有 " + (reqLimit - interval) / 1000 + " 秒冷却");
-                else
-                    reqLogs.put(featureId, now);
-            } else
-                reqLogs.put(featureId, now);
-        } else {
-            Map<Integer, Long> userMap = new HashMap<>();
-            userMap.put(featureId, now);
-            userReqLog.put(inMessage.getUser_id(), userMap);
-        }
-    }
 }

@@ -15,6 +15,7 @@ import com.darcklh.louise.Model.R;
 import com.darcklh.louise.Model.ReplyException;
 import com.darcklh.louise.Model.Saito.FeatureInfo;
 import com.darcklh.louise.Model.Saito.PluginInfo;
+import com.darcklh.louise.Model.Sender;
 import com.darcklh.louise.Model.VO.FeatureInfoMin;
 import com.darcklh.louise.Service.FeatureInfoService;
 import com.darcklh.louise.Service.GroupService;
@@ -101,16 +102,11 @@ public class CqhttpWSController {
         // TODO 暂时先跳过所有心跳反应，后续可以实现 BOT 状态监听
 
         switch (post.getPost_type()) {
-            case meta_event:
-                return;
-            case message:
-                handleMessagePost((MessagePost) post);
-                return;
-            case notice:
-                handleNoticePost((NoticePost) post);
-                return;
-            case request:
-                handleRequestPost((RequestPost) post);
+            case meta_event -> {
+            }
+            case message -> handleMessagePost((MessagePost) post);
+            case notice -> handleNoticePost((NoticePost) post);
+            case request -> handleRequestPost((RequestPost) post);
         }
     }
 
@@ -171,6 +167,10 @@ public class CqhttpWSController {
                 // 添加好友后补充发送消息
                 Message message = Message.build();
                 message.setUser_id(post.getUser_id());
+                Sender sender = new Sender();
+                sender.setNickname("Louise");
+                sender.setUser_id(Long.parseLong(LouiseConfig.BOT_ACCOUNT));
+                message.setSender(sender);
                 message.text("露易丝已经成功添加好友，有什么问题的话可以发送!help哦").send();
             }
             case group -> {

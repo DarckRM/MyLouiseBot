@@ -77,9 +77,14 @@ public class R {
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<String> cqhttp = new HttpEntity<>(param.toJSONString(), headers);
         //开始请求
-        log.info("请求 cqhttp 接口: " + api);
+        log.info("请求 nt-qq 接口: {}", api);
+        String responseString = OkHttpUtils.builder().url(LouiseConfig.BOT_BASE_URL + api)
+                .addBody(param.toJSONString())
+                .post(true)
+                .async();
         this.refresh();
-        return restTemplate.postForObject(LouiseConfig.BOT_BASE_URL + api, cqhttp, JSONObject.class);
+        log.info("└ 接口 {} 返回消息: {}", api, responseString);
+        return JSONObject.parseObject(responseString);
     }
 
     /**
