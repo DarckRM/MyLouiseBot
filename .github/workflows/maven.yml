@@ -48,7 +48,7 @@ jobs:
       uses: garygrossgarten/github-action-scp@release
       with:
         local: target/louise-0.1.7-dev.jar
-        remote: /home/darcklh/qqbot/MyLouise/louise-0.1.7-dev.jar
+        remote: /home/akarin/louise/louise-0.1.7-dev.jar
         host: ${{ secrets.AZURE_HOST }}
         username: ${{ secrets.AZURE_USERNAME }}
         privateKey: ${{ secrets.AZURE_SSH_KEY }}
@@ -56,7 +56,7 @@ jobs:
       if: always()
       uses: fifsky/ssh-action@master
       with:
-        command: cd /home/darcklh/qqbot/MyLouise && ./restart.sh ./louise-0.1.7-dev.jar
+        command: cd /home/akarin/louise/ && ./boot.sh
         host: ${{ secrets.AZURE_HOST }}
         user: ${{ secrets.AZURE_USERNAME }}
         key: ${{ secrets.AZURE_SSH_KEY }}
