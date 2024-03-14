@@ -56,7 +56,7 @@ jobs:
       if: always()
       uses: fifsky/ssh-action@master
       with:
-        command: cd /home/akarin/louise/ && ./boot.sh
+        command: cd /home/akarin/louise/ && ./boot_mute.sh
         host: ${{ secrets.AZURE_HOST }}
         user: ${{ secrets.AZURE_USERNAME }}
         key: ${{ secrets.AZURE_SSH_KEY }}
