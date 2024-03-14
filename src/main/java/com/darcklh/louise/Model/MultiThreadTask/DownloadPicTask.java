@@ -1,6 +1,7 @@
 package com.darcklh.louise.Model.MultiThreadTask;
 
 import com.darcklh.louise.Api.FileControlApi;
+import com.darcklh.louise.Model.Enum.DownloadType;
 import com.darcklh.louise.Service.MultiTaskService;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +33,7 @@ public class DownloadPicTask implements MultiTaskService {
     private String urlList;
     private String fileName;
     private String fileOrigin;
+    private DownloadType downloadType;
     // 总任务计数器
 
     private FileControlApi fileControlApi;

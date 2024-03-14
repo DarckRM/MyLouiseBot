@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.darcklh.louise.Config.LouiseConfig;
+import com.darcklh.louise.Model.Enum.DownloadType;
 import com.darcklh.louise.Model.Louise.BooruTags;
 import com.darcklh.louise.Model.Messages.InMessage;
 import com.darcklh.louise.Model.Messages.Message;
@@ -23,10 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /**
  * @author DarckLH
@@ -209,56 +207,18 @@ public class YandeAPI {
      */
     private void sendYandeResult(InMessage inMessage, JSONArray resultJsonArray, Integer limit, Integer page, String fileOrigin, String[] tags_info, String final_tags) throws InterruptedException {
         Message message = Message.build(inMessage);
-        String image;
-        ArrayList<String> replyImgList = new ArrayList<>();
-        List<DownloadPicTask> taskList = new ArrayList<>();
-        OutMessage outMessage = new OutMessage(inMessage);
-        int taskId = 0;
-        String page_nation = page + "页/" +  limit + "条";
+        boolean isGroup = message.getGroup_id() > 0;
+
+        ArrayList<String> imagePathList = downloadSampleImage(resultJsonArray, fileOrigin, page + "-" + limit + "-" + final_tags, limit, isGroup);
+        if (imagePathList == null || imagePathList.size() == 0)
+            return;
+
         Node imageNode = Node.build();
-
-        for ( Object object: resultJsonArray) {
-            if (limit == 0)
-                break;
-            JSONObject imgJsonObj = (JSONObject) object;
-            String[] tagList = imgJsonObj.getString("tags").split(" ");
-            // 如果是群聊跳过成人内容
-            if (outMessage.getGroup_id() >= 0 && (isNSFW(tagList)))
-                continue;
-
-            String fileName = imgJsonObj.getString("md5") + "." + imgJsonObj.getString("file_ext");
-            image = LouiseConfig.BOT_LOUISE_CACHE_IMAGE + fileOrigin + "/" + fileName;
-            taskList.add(new DownloadPicTask(taskId, imgJsonObj.getString("jpeg_url"), fileName, fileOrigin, fileControlApi));
-            replyImgList.add(image);
-            imageNode.image(image);
-            taskId++;
-            limit--;
+        for (String imagePath : imagePathList) {
+            imageNode.image(LouiseConfig.BOT_LOUISE_CACHE_IMAGE + imagePath);
         }
-        // 写入缓存
-        dragonflyUtils.setEx(fileOrigin + " " + final_tags + page_nation, replyImgList, 3600);
-        List<MultiTaskService>[] taskListPerThread = TaskDistributor.distributeTasks(taskList, 4);
-        List<WorkThread> workThreads = new ArrayList<>();
-        for (int j = 0; j < taskListPerThread.length; j++) {
-            WorkThread workThread = new WorkThread(taskListPerThread[j], j);
-            workThreads.add(workThread);
-            LouiseThreadPool.execute(workThread::run);
-        }
-        // 所有任务完成则继续
-        int done = 0;
-        int total_cost = 0;
-        do {
-            done = 0;
-            if (total_cost >= 90000) {
-                total_cost = 0;
-                message.reply().text("你的请求处理超时了，请稍候再试吧 |д`)").fall();
-            }
-            for (WorkThread thread : workThreads)
-                if (thread.getRestTask() == 0)
-                    done++;
-            total_cost += 2000;
-            Thread.sleep(2000);
-        } while (done != workThreads.size());
 
+        String page_nation = page + "页/" +  limit + "条";
         String announce = "支持中文搜索(原神)，请使用角色正确中文名\n如果想追加中文词条请使用!yande/help查看说明\n";
         message.node(Node.build()
                 .text(announce)
@@ -266,6 +226,11 @@ public class YandeAPI {
         if (message.getGroup_id() >= 0)
             message.node(Node.build().text("已过滤过于离谱的图片，如需全部资料请私聊 (`ヮ´)"));
         message.node(imageNode).send();
+
+        if (downloadFileImage(resultJsonArray, fileOrigin, limit, isGroup))
+            log.info("原图下载成功");
+        else
+            log.error("原图下载失败");
     }
 
     private void instantSend(Message message, ArrayList<String> imageList, String tags_info, String page_nation) {
@@ -516,5 +481,134 @@ public class YandeAPI {
         }
         Message.build(inMessage).node(Node.build().text(tagList.toString())).send();
         return null;
+    }
+
+    private ArrayList<String> downloadSampleImage(JSONArray resultJsonArray, String booruApi, String booruParam, int limit, boolean isGroup) {
+        String sampleKey = booruApi.toUpperCase() + ":SAMPLE:" + booruParam;
+        ArrayList<String> filePathList = dragonflyUtils.get(sampleKey, ArrayList.class);
+        if (filePathList != null)
+            return filePathList;
+
+        ArrayList<String> fileNameList = makeImageNameList(resultJsonArray, limit, isGroup);
+        filePathList = makeImagePathList(fileNameList, "sample/" + booruApi + "/");
+        ArrayList<String> fileUrlList = makeImageUrlList(resultJsonArray, "sample_url");
+
+        ArrayList<String[]> uniformArrayList = makeUniformImageList(fileNameList, filePathList, fileUrlList, limit);
+
+        if(distributeTask(uniformArrayList, booruApi, DownloadType.SAMPLE)) {
+            dragonflyUtils.setEx(sampleKey, filePathList, 3600);
+            return filePathList;
+        }
+
+        return null;
+    }
+
+    private boolean downloadFileImage(JSONArray resultJsonArray, String booruApi, int limit, boolean isGroup) {
+
+        ArrayList<String> fileNameList = makeImageNameList(resultJsonArray, limit, isGroup);
+        ArrayList<String> filePathList = makeImagePathList(fileNameList,  booruApi + "/");
+        ArrayList<String> fileUrlList = makeImageUrlList(resultJsonArray, "file_url");
+
+        ArrayList<String[]> uniformArrayList = makeUniformImageList(fileNameList, filePathList, fileUrlList, limit);
+
+        if(distributeTask(uniformArrayList, booruApi, DownloadType.FILE)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private ArrayList<String[]> makeUniformImageList(ArrayList<String> fileNameList, ArrayList<String> filePathList, ArrayList<String> fileUrlList, int limit) {
+        ArrayList<String[]> uniformArrayList = new ArrayList<>();
+
+        for (int index = 0; index < limit; index++) {
+            String[] uniformArray = new String[3];
+            uniformArray[0] = fileNameList.get(index);
+            uniformArray[1] = filePathList.get(index);
+            uniformArray[2] = fileUrlList.get(index);
+            uniformArrayList.add(uniformArray);
+        }
+
+        return uniformArrayList;
+    }
+
+    private ArrayList<String> makeImageNameList(JSONArray resultJsonArray, int limit, boolean isGroup) {
+        ArrayList<String> imageNameList = new ArrayList<>();
+        for ( Object object: resultJsonArray) {
+            if (limit == 0)
+                break;
+            JSONObject imgJsonObj = (JSONObject) object;
+            String[] tagList = imgJsonObj.getString("tags").split(" ");
+            // 如果是群聊跳过成人内容
+            if (isGroup && isNSFW(tagList))
+                continue;
+            imageNameList.add(imgJsonObj.getString("md5") + "." + imgJsonObj.getString("file_ext"));
+            limit--;
+        }
+        return imageNameList;
+    }
+
+    private ArrayList<String> makeImagePathList(ArrayList<String> imageNameList, String booruApi) {
+        ArrayList<String> imagePathList = new ArrayList<>();
+        for (String imageName : imageNameList)
+            imagePathList.add(booruApi + imageName);
+        return imagePathList;
+    }
+
+    private ArrayList<String> makeImageUrlList(JSONArray resultJsonArray, String imageKey) {
+        ArrayList<String> imageUrlList = new ArrayList<>();
+        for (Object o : resultJsonArray) {
+            JSONObject imageJson = (JSONObject) o;
+            imageUrlList.add(imageJson.getString(imageKey));
+        }
+        return imageUrlList;
+    }
+
+    private boolean distributeTask(ArrayList<String[]> imageList, String booruApi, DownloadType type) {
+        // 下载任务的 List 集合
+        ArrayList<DownloadPicTask> taskList = new ArrayList<>();
+        if (Objects.requireNonNull(type) == DownloadType.SAMPLE) {
+            booruApi = "sample/" + booruApi;
+        }
+        for (String[] image : imageList) {
+            String filePath = LouiseConfig.LOUISE_CACHE_IMAGE_LOCATION + booruApi + "/" + image[0];
+            if (fileControlApi.checkFileExist(filePath))
+                continue;
+            taskList.add(new DownloadPicTask(0, image[2], image[0], booruApi, fileControlApi));
+        }
+        if (taskList.size() == 0)
+            return true;
+        try {
+            return handleDownloadTask(taskList);
+        } catch (InterruptedException e) {
+            log.error("{}", e.getLocalizedMessage());
+            return false;
+        }
+    }
+
+    private boolean handleDownloadTask(ArrayList<DownloadPicTask> taskList) throws InterruptedException {
+        List<MultiTaskService>[] taskListPerThread = TaskDistributor.distributeTasks(taskList, 4);
+        List<WorkThread> workThreads = new ArrayList<>();
+        for (int j = 0; j < taskListPerThread.length; j++) {
+            WorkThread workThread = new WorkThread(taskListPerThread[j], j);
+            workThreads.add(workThread);
+            LouiseThreadPool.execute(workThread::run);
+        }
+        // 所有任务完成则继续
+        int done;
+        int total_cost = 0;
+        do {
+            done = 0;
+            if (total_cost >= 90000) {
+                total_cost = 0;
+
+            }
+            for (WorkThread thread : workThreads)
+                if (thread.getRestTask() == 0)
+                    done++;
+            total_cost += 2000;
+            Thread.sleep(2000);
+        } while (done != workThreads.size());
+        return true;
     }
 }

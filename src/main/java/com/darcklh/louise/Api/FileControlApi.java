@@ -176,28 +176,19 @@ public class FileControlApi {
 
     /**
      * 用 RestTemplate 添加代理进行请求
-     * @param urlList
-     * @param fileName
-     * @param fileOrigin
-     * @return
+     * @param urlList String
+     * @param fileName String
+     * @param fileOrigin String
+     * @return boolean
      */
     public boolean downloadPicture_RestTemplate(String urlList, String fileName, String fileOrigin) {
-        //判断目录是否存在
-        String filePath = LouiseConfig.LOUISE_CACHE_IMAGE_LOCATION + fileOrigin + "/";
-        File folder = new File(filePath);
-        // 文件保存的本地路径
-        String targetPath = LouiseConfig.LOUISE_CACHE_IMAGE_LOCATION + fileOrigin + "/" + fileName;
+        String folderPath = LouiseConfig.LOUISE_CACHE_IMAGE_LOCATION + fileOrigin + "/";
+        String filePath = LouiseConfig.LOUISE_CACHE_IMAGE_LOCATION + fileOrigin + "/" + fileName;
 
-        if (!folder.exists() && !folder.isDirectory()) {
-            log.info("创建了图片缓存文件夹" + fileOrigin);
-            folder.mkdirs();
-        }
-
-        File file = new File(targetPath);
-        if (file.exists()) {
-            log.info("已经存在图片 " + targetPath);
+        if (!createDirectory(folderPath))
+            return false;
+        if (checkFileExist(filePath))
             return true;
-        }
 
         RestTemplate restTemplate = new RestTemplate();
 
@@ -210,7 +201,7 @@ public class FileControlApi {
             restTemplate.setRequestFactory(new HttpProxy().getFactory("下载图片"));
 
         restTemplate.execute(urlList, HttpMethod.GET, requestCallback, clientHttpResponse -> {
-            Files.copy(clientHttpResponse.getBody(), Paths.get(targetPath));
+            Files.copy(clientHttpResponse.getBody(), Paths.get(filePath));
             return null;
         });
         return true;
@@ -218,7 +209,7 @@ public class FileControlApi {
 
     /**
      * 根据传入的URL下载图片到本地
-     * @param urlList
+     * @param urlList String
      */
     public boolean downloadPictureURL_Single(String urlList, String fileName, String fileOrigin) {
         URL url = null;
@@ -250,6 +241,39 @@ public class FileControlApi {
             return false;
         }
         return true;
+    }
+
+    /**
+     * 根据传入的路径决定是否创建目录
+     *
+     * @param folderPath String
+     * @return boolean
+     */
+    public boolean createDirectory(String folderPath) {
+        File folder = new File(folderPath);
+        // 文件保存的本地路径
+        if (!folder.exists() && !folder.isDirectory()) {
+            log.info("创建了 {} 文件夹", folderPath);
+            if (!folder.mkdirs()) {
+                log.error("创建 {} 文件夹失败", folderPath);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * 根据文件路径判定文件是否存在
+     * @param filePath String
+     * @return boolean
+     */
+    public boolean checkFileExist(String filePath) {
+        File file = new File(filePath);
+        if (file.exists()) {
+            log.info("已经存在文件 {}", filePath);
+            return true;
+        }
+        return false;
     }
 
 }

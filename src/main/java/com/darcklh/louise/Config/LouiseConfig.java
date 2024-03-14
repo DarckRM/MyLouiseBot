@@ -25,6 +25,7 @@ public class LouiseConfig {
     public static String LOUISE_HELP_PAGE;
     public static String LOUISE_ADMIN_NUMBER;
     public static String LOUISE_CACHE_IMAGE_LOCATION;
+    public static String LOUISE_CACHE_IMAGE_SAMPLE_LOCATION;
     public static String LOUISE_CACHE_LOCATION;
     public static String LOUISE_ERROR_UNKNOWN_COMMAND;
     public static String LOUISE_ERROR_THIRD_API_REQUEST_FAILED;
@@ -34,6 +35,7 @@ public class LouiseConfig {
 
     //CQ-HTTP相关配置
     public static String BOT_LOUISE_CACHE_IMAGE;
+    public static String BOT_LOUISE_CACHE_IMAGE_SAMPLE;
     public static String BOT_BASE_URL;
     public static String BOT_HTTP_POST_KEY;
     public static String BOT_CACHE_LOCATION;
@@ -66,8 +68,10 @@ public class LouiseConfig {
         LOUISE_ADMIN_NUMBER = configs.get("LOUISE.ADMIN_NUMBER");
         LOUISE_CACHE_LOCATION = configs.get("LOUISE.CACHE.LOCATION");
         LOUISE_CACHE_IMAGE_LOCATION = configs.get("LOUISE.CACHE.IMAGE_LOCATION");
+        LOUISE_CACHE_IMAGE_SAMPLE_LOCATION = configs.get("LOUISE.CACHE.IMAGE_SAMPLE_LOCATION");
 
         BOT_LOUISE_CACHE_IMAGE = configs.get("BOT.LOUISE_CACHE_IMAGE");
+        BOT_LOUISE_CACHE_IMAGE_SAMPLE = configs.get("BOT.LOUISE_CACHE_IMAGE_SAMPLE");
         BOT_BASE_URL = configs.get("BOT.BASE_URL");
         BOT_HTTP_POST_KEY = configs.get("BOT.HTTP_POST_KEY");
         BOT_CACHE_LOCATION = configs.get("BOT.CACHE_LOCATION");
