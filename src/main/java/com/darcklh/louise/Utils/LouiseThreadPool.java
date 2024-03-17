@@ -8,7 +8,7 @@ import java.util.concurrent.*;
 public class LouiseThreadPool {
     private final int corePoolSize;
     private final int maximumPoolSize;
-    private static ExecutorService executor = null;
+    private final static ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
 
     private static final class LouiseThreadFactory implements ThreadFactory {
         @Override
@@ -27,9 +27,9 @@ public class LouiseThreadPool {
     public LouiseThreadPool(int corePoolSize, int maximumPoolSize) {
         this.corePoolSize = corePoolSize;
         this.maximumPoolSize = maximumPoolSize;
-        ThreadFactory factory = new CustomizableThreadFactory("LouisePool-");
-        BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>(999);
-        executor = new ThreadPoolExecutor(corePoolSize, maximumPoolSize, 60, TimeUnit.SECONDS, queue, factory, new ThreadPoolExecutor.DiscardPolicy());
+//        ThreadFactory factory = new CustomizableThreadFactory("LouisePool-");
+//        BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>(999);
+//        executor = new ThreadPoolExecutor(corePoolSize, maximumPoolSize, 60, TimeUnit.SECONDS, queue, factory, new ThreadPoolExecutor.DiscardPolicy());
     }
 
     public static void execute(@NotNull Runnable command) {

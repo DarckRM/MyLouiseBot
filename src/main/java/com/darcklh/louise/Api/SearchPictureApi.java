@@ -5,6 +5,7 @@ import com.darcklh.louise.Controller.CqhttpWSController;
 import com.darcklh.louise.Model.Messages.InMessage;
 import com.darcklh.louise.Model.Messages.Message;
 import com.darcklh.louise.Service.SearchPictureService;
+import com.darcklh.louise.Utils.LouiseThreadPool;
 import com.darcklh.louise.Utils.Tool;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,30 +33,31 @@ public class SearchPictureApi{
 
         Message msg = new Message(inMessage);
 
-        new Thread(() -> {
-            long userId = inMessage.getUser_id();
-            msg.at(userId).text("请在 15秒 内发送你要搜索的图片吧").send();
-            // 尝试从 WS 获取参数
-            CqhttpWSController.getMessage((value) -> {
-                if (value == null) {
-                    msg.at(userId).text("你已经很久没有理 Louise 了, 下次再搜索吧").fall();
-                } else {
-                    inMessage.setMessage(inMessage.getMessage() + value.getMessage());
-                    msg.setMessage_id(value.getMessage_id());
-                }
-            }, userId, 15000L);
+        long userId = inMessage.getUser_id();
+        msg.at(userId).text("请在 15秒 内发送你要搜索的图片吧").send();
+        // 尝试从 WS 获取参数
+        CqhttpWSController.getMessage((value) -> {
+            if (value == null) {
+                msg.at(userId).text("你已经很久没有理 Louise 了, 下次再搜索吧").fall("等待检索图片超时");
+            } else {
+                inMessage.setMessage(inMessage.getMessage() + value.getMessage());
+                msg.setMessage_id(value.getMessage_id());
+            }
+        }, userId, 15000L);
 
-            //解析上传的信息 拿到图片URL还有一些相关参数
-            String url = inMessage.getMessage();
-            url = url.substring(url.indexOf("url=")+4, url.length()-1);
+        //解析上传的信息 拿到图片URL还有一些相关参数
+        String url = inMessage.getMessage();
+        url = url.substring(url.indexOf("url=")+4, url.length()-1);
 
-            log.info("上传图片的地址:"+ url);
+        log.info("上传图片的地址:"+ url);
 
-            String finalUrl = url;
-            msg.reply().text("开始检索图片").send();
-            new Thread(() -> {searchPictureCenter(inMessage, finalUrl); }).start();
+        String finalUrl = url;
+        msg.reply().text("开始检索图片").send();
 
-        }).start();
+        searchPictureCenter(inMessage, finalUrl);
+//        new Thread(() -> {
+//            new Thread(() -> {searchPictureCenter(inMessage, finalUrl); }).start();
+//        }).start();
         return null;
     }
 
@@ -67,7 +69,8 @@ public class SearchPictureApi{
      */
     private void searchPictureCenter(InMessage inMessage, String url){
         // TODO 线程名过长
-        new Thread(() -> searchPictureService.findWithSourceNAO(inMessage, url), Tool.uniqueThreadName("", "NAO")).start();
+        LouiseThreadPool.execute(() -> searchPictureService.findWithSourceNAO(inMessage, url));
+//        new Thread(() -> searchPictureService.findWithSourceNAO(inMessage, url), Tool.uniqueThreadName("", "NAO")).start();
         // new Thread(() -> searchPictureService.findWithAscii2d(inMessage, url), Tool.uniqueThreadName("", "A2d")).start();
 
     }

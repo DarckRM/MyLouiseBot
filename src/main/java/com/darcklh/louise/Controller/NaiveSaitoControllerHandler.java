@@ -24,13 +24,11 @@ public class NaiveSaitoControllerHandler {
 
     @ExceptionHandler(value = InnerException.class)
     @ResponseBody
-    public JSONObject innerExceptionHandler(InnerException sE) {
+    public void innerExceptionHandler(InnerException sE) {
 
         Result<String> result = new Result<>();
         result.setMsg(sE.getMessage());
-        log.info("errorMsg={},innerCode={},exception={}", sE.getErrorMsg(), sE.getInnerCode(), sE.getOriginErrorMessage());
-        sE.getJsonObject().put("result", result);
-        return sE.getJsonObject();
+        log.error("errorMsg={},innerCode={},exception={}", sE.getErrorMsg(), sE.getInnerCode(), sE.getOriginErrorMessage());
     }
 
     @ExceptionHandler(value = ReplyException.class)

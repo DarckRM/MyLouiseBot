@@ -493,7 +493,7 @@ public class YandeAPI {
         filePathList = makeImagePathList(fileNameList, "sample/" + booruApi + "/");
         ArrayList<String> fileUrlList = makeImageUrlList(resultJsonArray, "sample_url");
 
-        ArrayList<String[]> uniformArrayList = makeUniformImageList(fileNameList, filePathList, fileUrlList, limit);
+        ArrayList<String[]> uniformArrayList = makeUniformImageList(fileNameList, filePathList, fileUrlList, fileNameList.size());
 
         if(distributeTask(uniformArrayList, booruApi, DownloadType.SAMPLE)) {
             dragonflyUtils.setEx(sampleKey, filePathList, 3600);

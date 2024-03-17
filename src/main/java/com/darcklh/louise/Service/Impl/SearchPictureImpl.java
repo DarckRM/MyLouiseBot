@@ -12,7 +12,8 @@ import com.darcklh.louise.Service.SearchPictureService;
 import com.darcklh.louise.Utils.HttpProxy;
 import com.darcklh.louise.Utils.OkHttpUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.client.HttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.LaxRedirectStrategy;
 import org.jsoup.Jsoup;
@@ -191,8 +192,8 @@ public class SearchPictureImpl implements SearchPictureService {
             HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(params, headers);
             HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory();
 
-            CloseableHttpClient httpClient = HttpClientBuilder.create().setRedirectStrategy(new LaxRedirectStrategy()).build();
-            factory.setHttpClient(httpClient);
+            HttpClient httpClient = HttpClientBuilder.create().setRedirectStrategy(new LaxRedirectStrategy()).build();
+//            factory.setHttpClient(httpClient);
             restTemplate.setRequestFactory(factory);
 
             // 借助代理请求

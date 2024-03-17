@@ -2,7 +2,7 @@ package com.darcklh.louise.Model;
 
 import lombok.Data;
 
-import javax.websocket.Session;
+import jakarta.websocket.Session;
 
 /**
  * @author DarckLH

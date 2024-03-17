@@ -1,8 +1,5 @@
 package com.darcklh.louise.Model;
 
-import org.springframework.stereotype.Component;
-
-import javax.annotation.PostConstruct;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 

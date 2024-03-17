@@ -2,11 +2,10 @@ package com.darcklh.louise.Utils;
 
 import com.alibaba.fastjson.JSONObject;
 import com.darcklh.louise.Model.GoCqhttp.*;
-import com.darcklh.louise.Model.Messages.InMessage;
 
-import javax.websocket.DecodeException;
-import javax.websocket.Decoder;
-import javax.websocket.EndpointConfig;
+import jakarta.websocket.DecodeException;
+import jakarta.websocket.Decoder;
+import jakarta.websocket.EndpointConfig;
 
 /**
  * @author DarckLH
