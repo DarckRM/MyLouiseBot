@@ -4,7 +4,9 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.darcklh.louise.Config.LouiseConfig;
+import com.darcklh.louise.Mapper.BooruImagesDao;
 import com.darcklh.louise.Model.Enum.DownloadType;
+import com.darcklh.louise.Model.Louise.BooruImages;
 import com.darcklh.louise.Model.Louise.BooruTags;
 import com.darcklh.louise.Model.Messages.InMessage;
 import com.darcklh.louise.Model.Messages.Message;
@@ -12,6 +14,7 @@ import com.darcklh.louise.Model.Messages.Node;
 import com.darcklh.louise.Model.Messages.OutMessage;
 import com.darcklh.louise.Model.MultiThreadTask.DownloadPicTask;
 import com.darcklh.louise.Model.ReplyException;
+import com.darcklh.louise.Service.BooruImagesService;
 import com.darcklh.louise.Service.BooruTagsService;
 import com.darcklh.louise.Service.MultiTaskService;
 import com.darcklh.louise.Service.UserService;
@@ -24,6 +27,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.InterfaceAddress;
+import java.time.Instant;
 import java.util.*;
 
 /**
@@ -45,6 +50,9 @@ public class YandeAPI {
 
     @Autowired
     BooruTagsService booruTagsService;
+
+    @Autowired
+    BooruImagesService booruImagesService;
 
     @Autowired
     DragonflyUtils dragonflyUtils;
@@ -226,6 +234,11 @@ public class YandeAPI {
         if (message.getGroup_id() >= 0)
             message.node(Node.build().text("已过滤过于离谱的图片，如需全部资料请私聊 (`ヮ´)"));
         message.node(imageNode).send();
+
+        if (saveBooruImages(resultJsonArray))
+            log.warn("图片数据写入数据库成功");
+        else
+            log.info("图片数据写入数据库失败");
 
         if (downloadFileImage(resultJsonArray, fileOrigin, limit, isGroup))
             log.info("原图下载成功");
@@ -606,5 +619,41 @@ public class YandeAPI {
             Thread.sleep(2000);
         } while (done != workThreads.size());
         return true;
+    }
+
+    private boolean saveBooruImages(JSONArray array) {
+        int current = Integer.parseInt(Long.toString(Instant.now().getEpochSecond()));
+        ArrayList<BooruImages> images = new ArrayList<>();
+        for (Object element : array) {
+            JSONObject image = (JSONObject) element;
+            Integer parent_id = image.getInteger("parent_id");
+            if (parent_id == null)
+                parent_id = 0;
+
+            images.add(new BooruImages(
+                    image.getInteger("id"),
+                    image.getString("tags"),
+                    current,
+                    image.getInteger("created_at"),
+                    image.getInteger("updated_at"),
+                    image.getInteger("creator_id"),
+                    image.getString("author"),
+                    image.getString("source"),
+                    image.getString("md5"),
+                    image.getString("file_ext"),
+                    image.getString("file_url"),
+                    image.getString("preview_url"),
+                    image.getString("sample_url"),
+                    image.getString("jpeg_url"),
+                    image.getString("rating"),
+                    image.getInteger("file_size"),
+                    image.getInteger("sample_file_size"),
+                    image.getInteger("jpeg_file_size"),
+                    parent_id,
+                    image.getInteger("width"),
+                    image.getInteger("height")
+            ));
+        }
+        return booruImagesService.saveOrUpdateBatch(images);
     }
 }

@@ -2,11 +2,15 @@ package com.darcklh.louise;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.darcklh.louise.Api.FileControlApi;
+import com.darcklh.louise.Mapper.BooruImagesDao;
 import com.darcklh.louise.Mapper.FeatureStaticDao;
 import com.darcklh.louise.Model.Annotation.LouisePlugin;
 import com.darcklh.louise.Model.Annotation.OnCommand;
 import com.darcklh.louise.Model.Annotation.OnMessage;
+import com.darcklh.louise.Model.Louise.BooruImages;
+import com.darcklh.louise.Model.Louise.BooruTags;
 import com.darcklh.louise.Model.Messages.Message;
 import com.darcklh.louise.Model.Saito.FeatureStatic;
 import com.darcklh.louise.Model.Saito.PluginInfo;
@@ -40,6 +44,16 @@ class MyLouiseApplicationTests {
 
     @Autowired
     FeatureStaticDao featureStaticDao;
+
+    @Autowired
+    BooruImagesDao booruImagesDao;
+
+
+    void testBooruImages() {
+        QueryWrapper<BooruImages> query = new QueryWrapper<>();
+        List<BooruImages> result = booruImagesDao.selectList(query);
+        System.out.println(result);
+    }
 
 
     void testRedisCache() {
