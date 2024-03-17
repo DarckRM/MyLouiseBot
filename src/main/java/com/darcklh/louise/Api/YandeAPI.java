@@ -509,13 +509,9 @@ public class YandeAPI {
         ArrayList<String> filePathList = makeImagePathList(fileNameList,  booruApi + "/");
         ArrayList<String> fileUrlList = makeImageUrlList(resultJsonArray, "file_url");
 
-        ArrayList<String[]> uniformArrayList = makeUniformImageList(fileNameList, filePathList, fileUrlList, limit);
+        ArrayList<String[]> uniformArrayList = makeUniformImageList(fileNameList, filePathList, fileUrlList, fileNameList.size());
 
-        if(distributeTask(uniformArrayList, booruApi, DownloadType.FILE)) {
-            return true;
-        }
-
-        return false;
+        return distributeTask(uniformArrayList, booruApi, DownloadType.FILE);
     }
 
     private ArrayList<String[]> makeUniformImageList(ArrayList<String> fileNameList, ArrayList<String> filePathList, ArrayList<String> fileUrlList, int limit) {
