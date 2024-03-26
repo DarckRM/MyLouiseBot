@@ -6,6 +6,7 @@ import com.darcklh.louise.Model.Result;
 import com.darcklh.louise.Model.Saito.SysUser;
 import com.darcklh.louise.Service.SysUserService;
 import com.darcklh.louise.Service.WebSocketService;
+import com.darcklh.louise.Utils.LouiseThreadPool;
 import com.darcklh.louise.Utils.PluginManager;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.util.buf.StringUtils;
@@ -69,7 +70,7 @@ public class SaitoController {
         output_log = true;
         lengthMap.put(client_name, 1);//默认从第一行开始
         //获取日志信息
-        new Thread(() -> {
+        LouiseThreadPool.execute(() -> {
             log.info("日志输出任务开始");
             //日志文件路径，获取最新的
             String filePath = "logs/mylouise.log";
@@ -120,7 +121,7 @@ public class SaitoController {
                 }
             }
             Thread.interrupted();
-        }, "output-log").start();
+        });
 
     }
 

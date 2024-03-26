@@ -41,6 +41,8 @@ import java.util.*;
 public class YandeAPI {
     // 每页最大数
     private static final int LIMIT = 10;
+    // 仅返回 Safe 评级且评分大于 15 分的结果
+    private final String SAFE_KEYWORD = "rating:safe+score:>15";
 
     @Autowired
     FileControlApi fileControlApi;
@@ -184,6 +186,12 @@ public class YandeAPI {
      */
     @RequestMapping("louise/konachan/{type}")
     public JSONObject konachanPic(@RequestBody InMessage inMessage, @PathVariable String type) {
+        // TODO)) 考虑到 Yande 站的每日图片功能并不好做过滤，当群聊时转化成一般 Tag 请求
+        if (inMessage.getGroup_id() > 0) {
+            inMessage.setMessage("!yande *");
+            requestBooru("https://konachan.com/post.json?tags=", "Konachan", inMessage);
+            return null;
+        }
         return requestPopular("https://konachan.com/post/popular_by_", "Konachan", type, inMessage);
     }
 
@@ -192,6 +200,12 @@ public class YandeAPI {
      */
     @RequestMapping("louise/yande/{type}")
     public JSONObject yandePic(@RequestBody InMessage inMessage, @PathVariable String type) {
+        // TODO)) 考虑到 Yande 站的每日图片功能并不好做过滤，当群聊时转化成一般 Tag 请求
+        if (inMessage.getGroup_id() > 0) {
+            inMessage.setMessage("!yande *");
+            requestBooru("https://yande.re/post.json?tags=", "Yande", inMessage);
+            return null;
+        }
         return requestPopular("https://yande.re/post/popular_by_", "Yande", type, inMessage);
     }
 
@@ -313,7 +327,7 @@ public class YandeAPI {
 
         // 如果群聊加上过滤 tag
         if (msg.getGroup_id() != -1)
-            tag_array.add("-rating:explicit");
+            tag_array.add(SAFE_KEYWORD);
 
         tags = tag_array.toArray(new String[0]);
         tags_info = tag_array.toArray(new String[0]);
@@ -409,14 +423,14 @@ public class YandeAPI {
     }
 
     private JSONObject requestPopular(String uri, String target, String type, InMessage inMessage) {
-        // 返回值
-        JSONObject sendJson = new JSONObject();
 
         // 校验参数合法性
         if (!type.equals("day") && !type.equals("week") && !type.equals("month")) {
+            JSONObject sendJson = new JSONObject();
             sendJson.put("reply", target + " 功能仅支持参数 day | week | month，请这样 !" + target.toLowerCase() + "/[参数] 请求哦");
             return sendJson;
         }
+
 
         uri += type + ".json";
 
@@ -453,7 +467,6 @@ public class YandeAPI {
 
     private JSONObject requestTags(String[] msg, String uri, InMessage inMessage) {
         String tag = msg[1];
-
         // 返回值
         JSONObject returnJson = new JSONObject();
 
