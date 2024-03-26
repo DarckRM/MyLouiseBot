@@ -3,10 +3,13 @@ package com.darcklh.louise.Service.Impl;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.darcklh.louise.Config.LouiseConfig;
 import com.darcklh.louise.Mapper.UserDao;
 import com.darcklh.louise.Model.InnerException;
 import com.darcklh.louise.Model.Louise.User;
+import com.darcklh.louise.Model.Messages.OutMessage;
 import com.darcklh.louise.Model.ReplyException;
+import com.darcklh.louise.Model.Sender;
 import com.darcklh.louise.Model.VO.UserRole;
 import com.darcklh.louise.Service.UserService;
 import com.darcklh.louise.Utils.DragonflyUtils;
@@ -59,8 +62,12 @@ public class UserImpl extends ServiceImpl<UserDao, User> implements UserService 
         long[] users_id = findAllUserID();
         for (long id : users_id)
             if (id == user_id) {
+                OutMessage out = new OutMessage();
+                out.setGroup_id(group_id);
+                out.setMessage("你已经注册过了哦，请使用 !help 获取其它帮助信息吧，更加建议私聊哦");
+                out.setSender(new Sender(Long.parseLong(LouiseConfig.BOT_ACCOUNT), "Louise", "1", 16));
                 log.warn("用户 " + user_id + " 已注册");
-                throw new ReplyException("你已经注册过了哦");
+                throw new ReplyException(out);
             }
 
         //构造Rest请求模板
@@ -75,7 +82,7 @@ public class UserImpl extends ServiceImpl<UserDao, User> implements UserService 
         userInfo.put("group_id", group_id);
 
         //请求bot获取用户信息
-        JSONObject result = JSON.parseObject(restTemplate.postForObject("http://localhost:5700/get_group_member_info", userInfo, String.class));
+        JSONObject result = JSON.parseObject(restTemplate.postForObject("http://localhost:3000/get_group_member_info", userInfo, String.class));
         log.info(result.toString());
 
         User user = new User();

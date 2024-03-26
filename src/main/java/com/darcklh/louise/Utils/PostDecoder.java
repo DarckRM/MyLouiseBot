@@ -28,13 +28,13 @@ public class PostDecoder implements Decoder.Text<AllPost> {
     public AllPost decode(String msg) throws DecodeException {
         JSONObject json = JSONObject.parseObject(msg);
         String post_type = json.getString("post_type");
-        switch (post_type) {
-            case "meta_event": return JSONObject.parseObject(msg, MetaEventPost.class);
-            case "message": return JSONObject.parseObject(msg, MessagePost.class);
-            case "notice": return JSONObject.parseObject(msg, NoticePost.class);
-            case "request": return JSONObject.parseObject(msg, RequestPost.class);
-        }
-        return null;
+        return switch (post_type) {
+            case "meta_event" -> JSONObject.parseObject(msg, MetaEventPost.class);
+            case "message" -> JSONObject.parseObject(msg, MessagePost.class);
+            case "notice" -> JSONObject.parseObject(msg, NoticePost.class);
+            case "request" -> JSONObject.parseObject(msg, RequestPost.class);
+            default -> null;
+        };
     }
 
     @Override

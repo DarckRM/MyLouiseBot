@@ -36,10 +36,7 @@ public class NaiveSaitoControllerHandler {
     public JSONObject handleReplyException(ReplyException e) {
         R r = new R();
         switch (e.getType()) {
-            case 0 -> {
-                return e.getReply();
-            }
-            case 1 -> r.sendMessage(e.getOutMessage());
+            case 0, 1 -> r.sendMessage(e.getOutMessage());
             case 2 -> e.getMsg().send();
             default -> log.error("未知的 replyException 类型");
         }

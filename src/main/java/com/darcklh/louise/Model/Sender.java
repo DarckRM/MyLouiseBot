@@ -13,4 +13,14 @@ public class Sender {
     private String nickname;
     private String sex;
     private Integer age;
+
+    public Sender() {
+    }
+
+    public Sender(Long userId, String nickname, String sex, Integer age) {
+        this.user_id = userId;
+        this.nickname = nickname;
+        this.sex = sex;
+        this.age = age;
+    }
 }

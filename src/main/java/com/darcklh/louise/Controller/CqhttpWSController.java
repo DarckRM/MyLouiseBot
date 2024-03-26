@@ -33,7 +33,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * @Description
  */
 @Component
-@ServerEndpoint(value = "/go-cqhttp", decoders = {PostDecoder.class}, encoders = {PostEncoder.class})
+@ServerEndpoint(value = "/onebot/v11/", decoders = {PostDecoder.class}, encoders = {PostEncoder.class})
+
 @Slf4j
 public class CqhttpWSController {
 
@@ -86,9 +87,10 @@ public class CqhttpWSController {
 
     @OnMessage
     public void onMessage(AllPost post, Session session) {
-        log.debug("收到 go-cqhttp 报文:" + post.toString());
-        // TODO 暂时先跳过所有心跳反应，后续可以实现 BOT 状态监听
+        if (post.getPost_type() != AllPost.PostType.meta_event)
+            log.info("ll-onebot:" + post.toString());
 
+        // TODO 暂时先跳过所有心跳反应，后续可以实现 BOT 状态监听
         switch (post.getPost_type()) {
             case meta_event -> {
             }
