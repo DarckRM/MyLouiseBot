@@ -43,10 +43,10 @@ public class WorkThread {
                 if (taskService.execute())
                     callBackFunc();
             }
-        } catch (IOException e) {
-            throw new InnerException(500, "文件读写错误", e.getMessage());
-        } catch ( NoSuchAlgorithmException e) {
-            throw new InnerException(501, "未知的错误", e.getClass() + "-" + e.getMessage());
+        }
+        catch (Exception e) {
+            log.error("执行任务异常: {}\n{}", e.getClass(), e.getMessage());
+            callBackFunc();
         }
     }
 

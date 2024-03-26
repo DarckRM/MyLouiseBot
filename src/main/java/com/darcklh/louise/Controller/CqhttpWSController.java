@@ -88,7 +88,7 @@ public class CqhttpWSController {
     @OnMessage
     public void onMessage(AllPost post, Session session) {
         if (post.getPost_type() != AllPost.PostType.meta_event)
-            log.info("ll-onebot:" + post.toString());
+            log.info(post.log());
 
         // TODO 暂时先跳过所有心跳反应，后续可以实现 BOT 状态监听
         switch (post.getPost_type()) {

@@ -1,7 +1,7 @@
 package com.darcklh.louise.Model.Messages;
 
+import com.alibaba.fastjson.JSONObject;
 import com.darcklh.louise.Config.LouiseConfig;
-import com.darcklh.louise.Model.R;
 import lombok.Data;
 
 import java.util.ArrayList;
@@ -15,7 +15,7 @@ import java.util.List;
 @Data
 public class Node {
     String type;
-    DataType data = new DataType();
+    NodeData data = new NodeData();
     List<Transfer> transfers = new ArrayList<>();
 
     class Transfer {
@@ -26,7 +26,6 @@ public class Node {
             this.nodeType = nodeType;
             this.value = value;
         }
-
     }
 
     public enum NodeType {
@@ -36,48 +35,55 @@ public class Node {
         reply
     }
 
-    public Node(String message, Long self_id) {
-        this.type = "node";
-        this.data.content = message;
-        this.data.uin = self_id;
-    }
-
-    public Node() {
-        this.type = "node";
-        this.data.content = "";
-    }
-
     public static Node build() {
         Node node = new Node();
         node.data.uin = Long.parseLong(LouiseConfig.BOT_ACCOUNT);
+        node.type = "node";
         return node;
     }
 
     public Node text(String text) {
-        this.data.content += text;
+        JSONObject obj = new JSONObject();
+        JSONObject data = new JSONObject();
+        obj.put("type", "text");
+        data.put("text", text);
+        obj.put("data", data);
+        this.data.content.add(obj);
         this.transfers.add(new Transfer(NodeType.text, text));
         return this;
     }
 
     public Node text(String text, int index) {
-        this.data.content += text;
+        JSONObject obj = new JSONObject();
+        JSONObject data = new JSONObject();
+        obj.put("type", "text");
+        data.put("text", text);
+        obj.put("data", data);
+        this.data.content.add(index, obj);
         this.transfers.add(index, new Transfer(NodeType.text, text));
         return this;
     }
 
     public Node image(String image) {
-        this.data.content += "[CQ:image,file=" + image + "]";
+        JSONObject obj = new JSONObject();
+        JSONObject data = new JSONObject();
+        obj.put("type", "image");
+        data.put("file", image);
+        obj.put("data", data);
+        this.data.content.add(obj);
         this.transfers.add(new Transfer(NodeType.image, image));
         return this;
     }
 
     public Node image(String image, int index) {
-        this.data.content += "[CQ:image,file=" + image + "]";
+        JSONObject obj = new JSONObject();
+        JSONObject data = new JSONObject();
+        obj.put("type", "image");
+        data.put("file", image);
+        obj.put("data", data);
+        this.data.content.add(index, obj);
         this.transfers.add(index, new Transfer(NodeType.image, image));
         return this;
     }
 
-    public Node reply() {
-        return this;
-    }
 }

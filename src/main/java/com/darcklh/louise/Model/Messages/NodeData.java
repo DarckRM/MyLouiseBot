@@ -1,6 +1,9 @@
 package com.darcklh.louise.Model.Messages;
 
+import com.alibaba.fastjson.JSONObject;
 import lombok.Data;
+
+import java.util.ArrayList;
 
 /**
  * @author DarckLH
@@ -8,7 +11,7 @@ import lombok.Data;
  * @Description
  */
 @Data
-public class DataType {
+public class NodeData {
     // 转发消息id
     Integer id;
     // 发送者显示名字
@@ -16,5 +19,5 @@ public class DataType {
     // 发送者QQ号
     long uin;
     // 用于自定义消息 不支持转发套娃
-    String content;
+    ArrayList<JSONObject> content = new ArrayList<>();
 }

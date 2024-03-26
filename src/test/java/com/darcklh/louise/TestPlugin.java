@@ -9,7 +9,6 @@ import com.darcklh.louise.Model.Enum.Environment;
 import com.darcklh.louise.Model.GoCqhttp.NoticePost;
 import com.darcklh.louise.Model.Messages.InMessage;
 import com.darcklh.louise.Model.Messages.Message;
-import com.darcklh.louise.Model.Messages.Messages;
 import com.darcklh.louise.Service.PluginService;
 import lombok.extern.slf4j.Slf4j;
 

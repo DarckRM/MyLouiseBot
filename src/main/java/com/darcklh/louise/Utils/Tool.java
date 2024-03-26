@@ -15,6 +15,13 @@ public class Tool {
             "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S",
             "T", "U", "V", "W", "X", "Y", "Z"};
 
+
+    public static  String makeLog(String logInfo) {
+        if (logInfo.length() >= 255)
+            logInfo = logInfo.substring(0, 255) + "...内容已省略";
+        return logInfo;
+    }
+
     /**
      * @param format 格式化 yyyy-MM-dd HH:mm:ss
      * @return

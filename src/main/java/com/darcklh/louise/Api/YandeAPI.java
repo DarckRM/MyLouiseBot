@@ -4,14 +4,12 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.darcklh.louise.Config.LouiseConfig;
-import com.darcklh.louise.Mapper.BooruImagesDao;
 import com.darcklh.louise.Model.Enum.DownloadType;
 import com.darcklh.louise.Model.Louise.BooruImages;
 import com.darcklh.louise.Model.Louise.BooruTags;
 import com.darcklh.louise.Model.Messages.InMessage;
 import com.darcklh.louise.Model.Messages.Message;
 import com.darcklh.louise.Model.Messages.Node;
-import com.darcklh.louise.Model.Messages.OutMessage;
 import com.darcklh.louise.Model.MultiThreadTask.DownloadPicTask;
 import com.darcklh.louise.Model.ReplyException;
 import com.darcklh.louise.Service.BooruImagesService;
@@ -27,7 +25,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
-import java.net.InterfaceAddress;
 import java.time.Instant;
 import java.util.*;
 
@@ -235,43 +232,47 @@ public class YandeAPI {
         if (imagePathList == null || imagePathList.size() == 0)
             return;
 
-        Node imageNode = Node.build();
-        for (String imagePath : imagePathList) {
-            imageNode.image(LouiseConfig.BOT_LOUISE_CACHE_IMAGE + imagePath);
-        }
-
         String page_nation = page + "页/" +  limit + "条";
-        String announce = "支持中文搜索(原神)，请使用角色正确中文名\n如果想追加中文词条请使用!yande/help查看说明\n";
-        message.node(Node.build()
-                .text(announce)
-                .text("你的请求结果出来了，你的参数是: " + Arrays.toString(tags_info) + "\n分页: " + page_nation), 0);
-        if (message.getGroup_id() >= 0)
-            message.node(Node.build().text("已过滤过于离谱的图片，如需全部资料请私聊 (`ヮ´)"));
-        message.node(imageNode).send();
+
+        instantSend(message, imagePathList, Arrays.toString(tags_info), page_nation);
 
         if (saveBooruImages(resultJsonArray))
             log.warn("图片数据写入数据库成功");
         else
             log.info("图片数据写入数据库失败");
-
-//        if (downloadFileImage(resultJsonArray, fileOrigin, limit, isGroup))
-//            log.info("原图下载成功");
-//        else
-//            log.error("原图下载失败");
     }
 
     private void instantSend(Message message, ArrayList<String> imageList, String tags_info, String page_nation) {
+        int imageCount = 0;
+        ArrayList<Node> nodes = new ArrayList<>();
         Node imageNode = Node.build();
-        for (String s : imageList)
-            imageNode.image(s);
 
-        String announce = "支持中文搜索(原神)，请使用角色正确中文名\n如果想追加中文词条请使用!yande/help查看说明\n";
+        for (String s : imageList) {
+            if (imageCount >= 3) {
+                nodes.add(imageNode);
+                imageCount = 0;
+                imageNode = Node.build();
+            }
+            imageCount += 1;
+            imageNode.image(LouiseConfig.BOT_LOUISE_CACHE_IMAGE + s);
+        }
+
+        if (imageNode.getTransfers().size() != 0)
+            nodes.add(imageNode);
+
+        String announce = "支持中文搜索，请使用角色正确中文名\n如果想追加中文词条请使用!yande/help查看说明\n";
         message.node(Node.build()
                 .text(announce)
                 .text("你的请求结果出来了，你的参数是: " + tags_info + "\n分页: " + page_nation), 0);
         if (message.getGroup_id() >= 0)
             message.node(Node.build().text("已过滤过于离谱的图片，如需全部资料请私聊 (`ヮ´)"));
-        message.node(imageNode).send();
+        message.send();
+
+        message.getNodes().clear();
+
+        for (Node n : nodes) {
+            message.node(n).send();
+        }
     }
 
     private boolean isNSFW(String[] tagList) {

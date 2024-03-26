@@ -1,5 +1,6 @@
 package com.darcklh.louise.Model.GoCqhttp;
 
+import com.darcklh.louise.Utils.Tool;
 import lombok.Data;
 
 /**
@@ -35,5 +36,9 @@ public class RequestPost implements AllPost {
     public enum SubType {
         add,
         invite
+    }
+
+    public String log() {
+        return Tool.makeLog(this.toString());
     }
 }

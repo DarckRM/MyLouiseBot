@@ -1,5 +1,6 @@
 package com.darcklh.louise.Model.GoCqhttp;
 
+import com.darcklh.louise.Utils.Tool;
 import lombok.Data;
 
 /**
@@ -70,5 +71,9 @@ public class NoticePost implements AllPost {
         add,
         delete,
         honor
+    }
+
+    public String log() {
+        return Tool.makeLog(this.toString());
     }
 }

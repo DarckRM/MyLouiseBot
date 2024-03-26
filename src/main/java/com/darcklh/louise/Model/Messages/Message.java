@@ -1,6 +1,5 @@
 package com.darcklh.louise.Model.Messages;
 
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.darcklh.louise.Model.R;
 import com.darcklh.louise.Model.Sender;
@@ -8,7 +7,6 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
-import java.util.List;
 
 @Slf4j
 @Data
@@ -32,7 +30,7 @@ public class Message {
     // 数组类型消息
     private ArrayList<JSONObject> message = new ArrayList<>();
     // 合并转发时的消息结构体
-    private ArrayList<Node> messages = new ArrayList<>();
+    private ArrayList<Node> nodes = new ArrayList<>();
     // 原始消息内容
     private String raw_message;
     // 字体
@@ -66,7 +64,7 @@ public class Message {
 
     public void clear() {
         this.message.clear();
-        this.messages.clear();
+        this.nodes.clear();
     }
 
     public Message at(Long user_id) {
@@ -152,25 +150,25 @@ public class Message {
     }
 
     public Message node(Node node) {
-        this.messages.add(node);
+        this.nodes.add(node);
         return this;
     }
 
     public Message node(Node node, int index) {
-        this.messages.add(index, node);
+        this.nodes.add(index, node);
         return this;
     }
 
     public void send() {
-        R r = new R();
-        if (this.group_id == -1 && !this.messages.isEmpty()) {
+        R r = R.getR();
+        if (this.group_id == -1 && !this.nodes.isEmpty()) {
             Message message = Message.build();
             message.setUser_id(this.user_id);
             message.setGroup_id(this.group_id);
             message.setMessage_type("privacy");
             message.setSender(this.sender);
-            for (Node node : messages) {
-                nodeToMessage(message, node);
+            for (Node node : nodes) {
+                parseNode(message, node);
                 message.send();
                 try {
                     Thread.sleep(500L);
@@ -182,12 +180,20 @@ public class Message {
             long groupInfo = this.getGroup_id();
             String userInfo = this.getSender().getNickname() + "(" + this.getUser_id() + ")";
             if (groupInfo != -1)
-                log.info("发送到 群聊({}): {}", groupInfo, makeLogInfo(this.getMessages().size() == 0 ? this.getMessage().toString() : this.getMessages().toString()));
+                log.info("发送到 群聊({}): {}", groupInfo, makeLogInfo(this.getNodes().size() == 0 ? this.getMessage().toString() : this.getNodes().toString()));
             else
                 log.info("发送到 私聊({}): {}", userInfo, makeLogInfo(this.getMessage().toString()));
+            nodesToMessage();
             r.send(this);
         }
         this.clear();
+    }
+
+    private void nodesToMessage() {
+        for (Node node : this.nodes ) {
+            this.message.add((JSONObject) JSONObject.toJSON(node));
+        }
+        this.nodes.clear();
     }
 
     private String makeLogInfo(String logInfo) {
@@ -196,7 +202,7 @@ public class Message {
         return logInfo;
     }
 
-    private void nodeToMessage(Message message, Node node) {
+    private void parseNode(Message message, Node node) {
         for (Node.Transfer transfer : node.transfers) {
             switch (transfer.nodeType) {
                 case text -> message.text(transfer.value);
@@ -206,15 +212,15 @@ public class Message {
     }
 
     public void send(MessageCallBack func) {
-        R r = new R();
-        if (this.group_id == -1 && this.messages.size() != 0) {
+        R r = R.getR();
+        if (this.group_id == -1 && this.nodes.size() != 0) {
             Message message = Message.build();
             message.setUser_id(this.user_id);
             message.setGroup_id(this.group_id);
             message.setMessage_type("privacy");
             message.setSender(this.sender);
-            for (Node node : messages) {
-                nodeToMessage(message, node);
+            for (Node node : nodes) {
+                parseNode(message, node);
                 message.send(func);
             }
         } else {
@@ -225,23 +231,18 @@ public class Message {
 
     public void fall() {
         R r = new R();
-        r.fall(this);
+        r.finish(this);
         this.clear();
     }
 
     public void fall(String text) {
         R r = new R();
-        r.fall(this, text);
+        r.finish(this, text);
         this.clear();
     }
 
     public interface MessageCallBack {
         void call(JSONObject result);
-    }
-
-    public String toJSONString(Message message) {
-        return "";
-
     }
 
 }

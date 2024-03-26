@@ -1,5 +1,6 @@
 package com.darcklh.louise.Model.GoCqhttp;
 
+import com.darcklh.louise.Utils.Tool;
 import lombok.Data;
 
 /**
@@ -16,4 +17,8 @@ public class MetaEventPost implements AllPost {
     long self_id = 0;
     // 上报类型 message: 消息; request: 请求; notice: 通知; meta_event: 元事件
     public PostType post_type = PostType.none;
+
+    public String log() {
+        return Tool.makeLog(this.toString());
+    }
 }

@@ -24,4 +24,11 @@ public interface AllPost {
         notice,
         meta_event;
     }
+
+    /**
+     * 生成 AllPost 类型的日志
+     * @return String
+     */
+    public String log();
+
 }

@@ -1,5 +1,6 @@
 package com.darcklh.louise.Model.Messages;
 
+import com.alibaba.fastjson.JSONObject;
 import com.darcklh.louise.Model.Sender;
 import lombok.Data;
 
@@ -38,6 +39,10 @@ public class OutMessage {
 
     public OutMessage() {
 
+    }
+
+    public String toJSONString() {
+        return JSONObject.toJSONString(this);
     }
 
     /**

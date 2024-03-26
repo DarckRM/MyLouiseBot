@@ -1,6 +1,7 @@
 package com.darcklh.louise.Model.GoCqhttp;
 
 import com.darcklh.louise.Model.Sender;
+import com.darcklh.louise.Utils.Tool;
 import lombok.Data;
 
 /**
@@ -43,6 +44,17 @@ public class MessagePost implements AllPost {
         group_self,
         other,
         normal;
+    }
+
+    public String log() {
+        StringBuilder builder = new StringBuilder();
+
+        String raw = Tool.makeLog(this.getRaw_message());
+
+        builder.append("MessagePost:{User:").append(this.getUser_id()).append("; Group:").append(this.getGroup_id())
+                .append("; Message:").append(raw).append("}");
+
+        return builder.toString();
     }
 
 }
