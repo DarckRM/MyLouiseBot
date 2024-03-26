@@ -231,7 +231,7 @@ public class YandeAPI {
         Message message = Message.build(inMessage);
         boolean isGroup = message.getGroup_id() > 0;
 
-        ArrayList<String> imagePathList = downloadSampleImage(resultJsonArray, fileOrigin, page + "-" + limit + "-" + final_tags, limit, isGroup);
+        ArrayList<String> imagePathList = downloadFileImage(resultJsonArray, fileOrigin, page + "-" + limit + "-" + final_tags, limit, isGroup);
         if (imagePathList == null || imagePathList.size() == 0)
             return;
 
@@ -254,10 +254,10 @@ public class YandeAPI {
         else
             log.info("图片数据写入数据库失败");
 
-        if (downloadFileImage(resultJsonArray, fileOrigin, limit, isGroup))
-            log.info("原图下载成功");
-        else
-            log.error("原图下载失败");
+//        if (downloadFileImage(resultJsonArray, fileOrigin, limit, isGroup))
+//            log.info("原图下载成功");
+//        else
+//            log.error("原图下载失败");
     }
 
     private void instantSend(Message message, ArrayList<String> imageList, String tags_info, String page_nation) {
@@ -529,15 +529,24 @@ public class YandeAPI {
         return null;
     }
 
-    private boolean downloadFileImage(JSONArray resultJsonArray, String booruApi, int limit, boolean isGroup) {
+    private ArrayList<String> downloadFileImage(JSONArray resultJsonArray, String booruApi, String booruParam, int limit, boolean isGroup) {
+        String fileKey = booruApi.toUpperCase() + ":FILE:" + booruParam;
+        ArrayList<String> filePathList = dragonflyUtils.get(fileKey, ArrayList.class);
+        if (filePathList != null)
+            return filePathList;
 
         ArrayList<String> fileNameList = makeImageNameList(resultJsonArray, limit, isGroup);
-        ArrayList<String> filePathList = makeImagePathList(fileNameList,  booruApi + "/");
+         filePathList = makeImagePathList(fileNameList,  booruApi + "/");
         ArrayList<String> fileUrlList = makeImageUrlList(resultJsonArray, "file_url");
 
         ArrayList<String[]> uniformArrayList = makeUniformImageList(fileNameList, filePathList, fileUrlList, fileNameList.size());
 
-        return distributeTask(uniformArrayList, booruApi, DownloadType.FILE);
+        if(distributeTask(uniformArrayList, booruApi, DownloadType.FILE)) {
+            dragonflyUtils.setEx(fileKey, filePathList, 3600);
+            return filePathList;
+        }
+
+        return null;
     }
 
     private ArrayList<String[]> makeUniformImageList(ArrayList<String> fileNameList, ArrayList<String> filePathList, ArrayList<String> fileUrlList, int limit) {
