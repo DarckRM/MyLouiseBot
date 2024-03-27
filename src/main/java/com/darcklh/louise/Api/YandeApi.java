@@ -235,7 +235,7 @@ public class YandeApi {
         if (imagePathList == null || imagePathList.size() == 0)
             return;
 //        instantSend(message, imagePathList, Arrays.toString(tags_info), page_nation);
-        sendImages(message, imagePathList);
+//        sendImages(message, imagePathList);
         if (saveBooruImages(resultJsonArray))
             log.warn("图片数据写入数据库成功");
         else
@@ -607,8 +607,8 @@ public class YandeApi {
         }
         for (String[] image : imageList) {
             String filePath = LouiseConfig.LOUISE_CACHE_IMAGE_LOCATION + booruApi + "/" + image[0];
-            if (fileControlApi.checkFileExist(filePath))
-                continue;
+//            if (fileControlApi.checkFileExist(filePath))
+//                continue;
             taskList.add(new DownloadPicTask(0, image[2], image[0], booruApi, fileControlApi));
         }
         if (taskList.size() == 0)
