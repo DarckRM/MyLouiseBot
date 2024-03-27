@@ -1,12 +1,10 @@
 package com.darcklh.louise.Api;
 
 import com.alibaba.fastjson.JSONObject;
-import com.darcklh.louise.Controller.CqhttpWSController;
+import com.darcklh.louise.WebSocket.WsServer;
 import com.darcklh.louise.Model.Messages.InMessage;
 import com.darcklh.louise.Model.Messages.Message;
 import com.darcklh.louise.Service.SearchPictureService;
-import com.darcklh.louise.Utils.LouiseThreadPool;
-import com.darcklh.louise.Utils.Tool;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -36,7 +34,7 @@ public class SearchPictureApi{
         long userId = inMessage.getUser_id();
         msg.at(userId).text("请在 15秒 内发送你要搜索的图片吧").send();
         // 尝试从 WS 获取参数
-        CqhttpWSController.getMessage((value) -> {
+        WsServer.getMessage((value) -> {
             if (value == null) {
                 msg.at(userId).text("你已经很久没有理 Louise 了, 下次再搜索吧").fall("等待检索图片超时");
             } else {

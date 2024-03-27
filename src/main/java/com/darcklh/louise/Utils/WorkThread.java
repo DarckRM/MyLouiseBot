@@ -35,18 +35,47 @@ public class WorkThread {
     /**
      * 执行被指派的所有任务
      */
+    public void run(Call call) {
+        try {
+            for (MultiTaskService taskService : taskList) {
+                taskService.setThreadId(this.threadId);
+                taskService.setTotal(this.restTask);
+                if (taskService.execute()) {
+                    callBackFunc(call);
+                }
+            }
+        }
+        catch (Exception e) {
+            log.error("执行任务异常: {}\n{}", e.getClass(), e.getMessage());
+            callBackFunc(call);
+        }
+    }
+
     public void run() {
         try {
             for (MultiTaskService taskService : taskList) {
                 taskService.setThreadId(this.threadId);
                 taskService.setTotal(this.restTask);
-                if (taskService.execute())
+                if (taskService.execute()) {
                     callBackFunc();
+                }
             }
         }
         catch (Exception e) {
             log.error("执行任务异常: {}\n{}", e.getClass(), e.getMessage());
             callBackFunc();
+        }
+    }
+
+    public interface Call {
+        public void call(List<MultiTaskService> tasks);
+    }
+
+    public void callBackFunc(Call call) {
+        this.restTask--;
+        if (this.restTask == 0) {
+            log.info("任务列表 " + this.threadId + " 已完成");
+            call.call(taskList);
         }
     }
 

@@ -1,7 +1,7 @@
 package com.darcklh.louise.Controller;
 
 import com.alibaba.fastjson.JSONObject;
-import com.darcklh.louise.Service.WebSocketService;
+import com.darcklh.louise.Service.Impl.WebSocketService;
 import com.darcklh.louise.Utils.BootApplication;
 import com.darcklh.louise.Utils.LouiseThreadPool;
 import lombok.extern.slf4j.Slf4j;

@@ -35,7 +35,7 @@ import java.util.*;
  */
 @Slf4j
 @RestController
-public class YandeAPI {
+public class YandeApi {
     // 每页最大数
     private static final int LIMIT = 10;
     // 仅返回 Safe 评级且评分大于 15 分的结果
@@ -228,14 +228,14 @@ public class YandeAPI {
         Message message = Message.build(inMessage);
         boolean isGroup = message.getGroup_id() > 0;
 
-        ArrayList<String> imagePathList = downloadFileImage(resultJsonArray, fileOrigin, page + "-" + limit + "-" + final_tags, limit, isGroup);
+        String page_nation = page + "页/" +  limit + "条";
+        sendInfo(message, Arrays.toString(tags_info), page_nation);
+
+        ArrayList<String> imagePathList = downloadFileImage(resultJsonArray, fileOrigin, page + "-" + limit + "-" + final_tags, limit, isGroup, message);
         if (imagePathList == null || imagePathList.size() == 0)
             return;
-
-        String page_nation = page + "页/" +  limit + "条";
-
-        instantSend(message, imagePathList, Arrays.toString(tags_info), page_nation);
-
+//        instantSend(message, imagePathList, Arrays.toString(tags_info), page_nation);
+        sendImages(message, imagePathList);
         if (saveBooruImages(resultJsonArray))
             log.warn("图片数据写入数据库成功");
         else
@@ -243,6 +243,19 @@ public class YandeAPI {
     }
 
     private void instantSend(Message message, ArrayList<String> imageList, String tags_info, String page_nation) {
+        sendInfo(message, tags_info, page_nation);
+        sendImages(message, imageList);
+    }
+
+    private void sendInfo(Message message, String tagsInfo, String pageNation) {
+        String announce = "支持中文搜索，请使用角色正确中文名\n如果想追加中文词条请使用!yande/help查看说明\n";
+        message.node(Node.build().text(announce).text("你的请求结果出来了，你的参数是: " + tagsInfo + "\n分页: " + pageNation), 0);
+        if (message.getGroup_id() >= 0)
+            message.node(Node.build().text("已过滤过于离谱的图片，如需全部资料请私聊 (`ヮ´)"));
+        message.send();
+    }
+
+    private void sendImages(Message message, ArrayList<String> imageList) {
         int imageCount = 0;
         ArrayList<Node> nodes = new ArrayList<>();
         Node imageNode = Node.build();
@@ -259,16 +272,6 @@ public class YandeAPI {
 
         if (imageNode.getTransfers().size() != 0)
             nodes.add(imageNode);
-
-        String announce = "支持中文搜索，请使用角色正确中文名\n如果想追加中文词条请使用!yande/help查看说明\n";
-        message.node(Node.build()
-                .text(announce)
-                .text("你的请求结果出来了，你的参数是: " + tags_info + "\n分页: " + page_nation), 0);
-        if (message.getGroup_id() >= 0)
-            message.node(Node.build().text("已过滤过于离谱的图片，如需全部资料请私聊 (`ヮ´)"));
-        message.send();
-
-        message.getNodes().clear();
 
         for (Node n : nodes) {
             message.node(n).send();
@@ -510,7 +513,7 @@ public class YandeAPI {
         return null;
     }
 
-    private ArrayList<String> downloadSampleImage(JSONArray resultJsonArray, String booruApi, String booruParam, int limit, boolean isGroup) {
+    private ArrayList<String> downloadSampleImage(JSONArray resultJsonArray, String booruApi, String booruParam, int limit, boolean isGroup, Message message) {
         String sampleKey = booruApi.toUpperCase() + ":SAMPLE:" + booruParam;
         ArrayList<String> filePathList = dragonflyUtils.get(sampleKey, ArrayList.class);
         if (filePathList != null)
@@ -522,7 +525,7 @@ public class YandeAPI {
 
         ArrayList<String[]> uniformArrayList = makeUniformImageList(fileNameList, filePathList, fileUrlList, fileNameList.size());
 
-        if(distributeTask(uniformArrayList, booruApi, DownloadType.SAMPLE)) {
+        if(distributeTask(uniformArrayList, booruApi, DownloadType.SAMPLE, message)) {
             dragonflyUtils.setEx(sampleKey, filePathList, 3600);
             return filePathList;
         }
@@ -530,19 +533,19 @@ public class YandeAPI {
         return null;
     }
 
-    private ArrayList<String> downloadFileImage(JSONArray resultJsonArray, String booruApi, String booruParam, int limit, boolean isGroup) {
+    private ArrayList<String> downloadFileImage(JSONArray resultJsonArray, String booruApi, String booruParam, int limit, boolean isGroup, Message message) {
         String fileKey = booruApi.toUpperCase() + ":FILE:" + booruParam;
         ArrayList<String> filePathList = dragonflyUtils.get(fileKey, ArrayList.class);
         if (filePathList != null)
             return filePathList;
 
         ArrayList<String> fileNameList = makeImageNameList(resultJsonArray, limit, isGroup);
-         filePathList = makeImagePathList(fileNameList,  booruApi + "/");
+        filePathList = makeImagePathList(fileNameList,  booruApi + "/");
         ArrayList<String> fileUrlList = makeImageUrlList(resultJsonArray, "file_url");
 
         ArrayList<String[]> uniformArrayList = makeUniformImageList(fileNameList, filePathList, fileUrlList, fileNameList.size());
 
-        if(distributeTask(uniformArrayList, booruApi, DownloadType.FILE)) {
+        if(distributeTask(uniformArrayList, booruApi, DownloadType.FILE, message)) {
             dragonflyUtils.setEx(fileKey, filePathList, 3600);
             return filePathList;
         }
@@ -596,7 +599,7 @@ public class YandeAPI {
         return imageUrlList;
     }
 
-    private boolean distributeTask(ArrayList<String[]> imageList, String booruApi, DownloadType type) {
+    private boolean distributeTask(ArrayList<String[]> imageList, String booruApi, DownloadType type, Message message) {
         // 下载任务的 List 集合
         ArrayList<DownloadPicTask> taskList = new ArrayList<>();
         if (Objects.requireNonNull(type) == DownloadType.SAMPLE) {
@@ -611,36 +614,31 @@ public class YandeAPI {
         if (taskList.size() == 0)
             return true;
         try {
-            return handleDownloadTask(taskList);
+            return handleDownloadTask(taskList, message);
         } catch (InterruptedException e) {
             log.error("{}", e.getLocalizedMessage());
             return false;
         }
     }
 
-    private boolean handleDownloadTask(ArrayList<DownloadPicTask> taskList) throws InterruptedException {
+    private boolean handleDownloadTask(ArrayList<DownloadPicTask> taskList, Message message) throws InterruptedException {
         List<MultiTaskService>[] taskListPerThread = TaskDistributor.distributeTasks(taskList, 4);
         List<WorkThread> workThreads = new ArrayList<>();
         for (int j = 0; j < taskListPerThread.length; j++) {
             WorkThread workThread = new WorkThread(taskListPerThread[j], j);
             workThreads.add(workThread);
-            LouiseThreadPool.execute(workThread::run);
+            LouiseThreadPool.execute(() -> {
+                workThread.run((tasks) -> {
+                    ArrayList<String> imageList = new ArrayList<>();
+                    for (MultiTaskService mTask : tasks) {
+                        DownloadPicTask task = (DownloadPicTask) mTask;
+                        String filePath = task.getFileOrigin() + "/" + task.getFileName();
+                        imageList.add(filePath);
+                    }
+                    sendImages(message, imageList);
+                });
+            });
         }
-        // 所有任务完成则继续
-        int done;
-        int total_cost = 0;
-        do {
-            done = 0;
-            if (total_cost >= 90000) {
-                total_cost = 0;
-
-            }
-            for (WorkThread thread : workThreads)
-                if (thread.getRestTask() == 0)
-                    done++;
-            total_cost += 2000;
-            Thread.sleep(2000);
-        } while (done != workThreads.size());
         return true;
     }
 

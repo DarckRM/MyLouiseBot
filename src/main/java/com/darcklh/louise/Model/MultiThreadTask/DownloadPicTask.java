@@ -42,7 +42,7 @@ public class DownloadPicTask implements MultiTaskService {
     public boolean execute() throws NoSuchAlgorithmException, IOException {
         setStatus(MultiTaskService.RUNNING);
         fileControlApi.downloadPicture_RestTemplate(urlList, fileName, fileOrigin);
-        log.info("任务列表 " + thread_id + ": 剩下 " + total + "张");
+        log.debug("任务列表 " + thread_id + ": 剩下 " + total + "张");
         setStatus(FINISHED);
         return true;
     }

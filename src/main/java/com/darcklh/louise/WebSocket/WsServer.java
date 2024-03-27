@@ -1,4 +1,4 @@
-package com.darcklh.louise.Controller;
+package com.darcklh.louise.WebSocket;
 
 import com.alibaba.fastjson.JSONObject;
 import com.darcklh.louise.Config.LouiseConfig;
@@ -37,9 +37,9 @@ import java.util.concurrent.ConcurrentHashMap;
 @ServerEndpoint(value = "/onebot/v11/", decoders = {PostDecoder.class}, encoders = {PostEncoder.class})
 
 @Slf4j
-public class CqhttpWSController {
+public class WsServer {
 
-    static CqhttpWSController ws;
+    static WsServer ws;
     @Autowired
     FeatureInfoService featureInfoService;
     @Autowired

@@ -48,6 +48,7 @@ public class Message {
         this.setMessage_id(inMessage.getMessage_id());
         this.setPost_type(inMessage.getPost_type());
         this.setSub_type(inMessage.getSub_type());
+        this.setRaw_message(inMessage.getRaw_message());
     }
 
     public Message() {

@@ -38,6 +38,11 @@ public class InvokeValidator {
 
     public boolean valid(Message message, FeatureInfo feature) {
 
+        if (feature == null) {
+            log.warn("功能对象为空");
+            return false;
+        }
+
         StopWatch stopWatch = new StopWatch();
         stopWatch.start();
         String userInfo = message.getSender().getNickname() + "(" + message.getUser_id() + ")";

@@ -27,9 +27,6 @@ public class LouiseThreadPool {
     public LouiseThreadPool(int corePoolSize, int maximumPoolSize) {
         this.corePoolSize = corePoolSize;
         this.maximumPoolSize = maximumPoolSize;
-//        ThreadFactory factory = new CustomizableThreadFactory("LouisePool-");
-//        BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>(999);
-//        executor = new ThreadPoolExecutor(corePoolSize, maximumPoolSize, 60, TimeUnit.SECONDS, queue, factory, new ThreadPoolExecutor.DiscardPolicy());
     }
 
     public static void execute(@NotNull Runnable command) {
