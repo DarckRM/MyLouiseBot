@@ -22,6 +22,7 @@ import org.springframework.stereotype.Component;
 import jakarta.annotation.PostConstruct;
 import jakarta.websocket.*;
 import jakarta.websocket.server.ServerEndpoint;
+
 import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -60,7 +61,7 @@ public class CqhttpWSController {
     public static ArrayList<Long> accounts = new ArrayList<>();
 
     // 用于存放在监听状态下 WS 接收到的消息体
-    public static ConcurrentHashMap<Long, InMessage> messageMap = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<Long, InMessage> messageMap = new ConcurrentHashMap<>();
 
     // 存放唯一的和 CQHTTP 的会话
     private Session session;
@@ -137,7 +138,7 @@ public class CqhttpWSController {
             return;
 
         // 向 messageMap 中写入消息体
-        messageMap.put(post.getUser_id(), inMessage);
+        addMessage(inMessage);
     }
 
     private void handleNoticePost(NoticePost post) {
@@ -187,7 +188,7 @@ public class CqhttpWSController {
     public static void stopWatch(Long userId) {
         // 监听计数器减少，移除多余消息
         listenerCounts--;
-        messageMap.remove(userId);
+        ws.messageMap.remove(userId);
         accounts.remove(userId);
     }
 
@@ -200,32 +201,45 @@ public class CqhttpWSController {
      * @return InMessage inMessage
      */
     public static InMessage getMessage(GoCallBack callBack, Long userId, Long exceedTime) {
+        return ws.syncGetMessage(callBack, userId, exceedTime);
+    }
+
+    private synchronized InMessage syncGetMessage(GoCallBack callBack, Long userId, Long exceedTime) {
         // 进入监听模式
         startWatch(userId);
         int interval = 0;
         InMessage inMessage;
-        while (interval < exceedTime) {
-            if (interval % 5000 == 0)
-                log.info("正在监听来自 " + Arrays.toString(accounts.toArray()) + " 的消息");
-            inMessage = messageMap.get(userId);
-            if (inMessage != null) {
-                // 监听计数器减少，移除多余消息
-                stopWatch(userId);
-                callBack.call(inMessage);
-                return inMessage;
+        try {
+            log.info("正在监听来自 " + Arrays.toString(accounts.toArray()) + " 的消息");
+            while (interval < exceedTime) {
+                inMessage = messageMap.get(userId);
+                if (inMessage != null) {
+                    // 监听计数器减少，移除多余消息
+                    stopWatch(userId);
+                    callBack.call(inMessage);
+                    return inMessage;
+                }
+                wait(1000);
+                interval += 1000;
             }
-            interval += 1000;
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+            stopWatch(userId);
+            callBack.call(null);
+        } catch (InterruptedException e) {
+            log.error(e.getLocalizedMessage());
         }
-        // 监听计数器减少，移除多余消息
-        stopWatch(userId);
-        callBack.call(null);
         return null;
     }
+
+
+    public static void addMessage(InMessage inMessage) {
+        ws.syncAddMessage(inMessage);
+    }
+
+    private synchronized void syncAddMessage(InMessage inMessage) {
+        messageMap.put(inMessage.getUser_id(), inMessage);
+        notifyAll();
+    }
+
 
     public interface GoCallBack {
         void call(InMessage inMessage);

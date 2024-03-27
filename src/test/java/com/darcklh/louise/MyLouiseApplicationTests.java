@@ -4,6 +4,8 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.darcklh.louise.Api.FileControlApi;
+import com.darcklh.louise.Config.LouiseConfig;
+import com.darcklh.louise.Controller.CqhttpWSController;
 import com.darcklh.louise.Mapper.BooruImagesDao;
 import com.darcklh.louise.Mapper.FeatureStaticDao;
 import com.darcklh.louise.Model.Annotation.LouisePlugin;
@@ -11,6 +13,7 @@ import com.darcklh.louise.Model.Annotation.OnCommand;
 import com.darcklh.louise.Model.Annotation.OnMessage;
 import com.darcklh.louise.Model.Louise.BooruImages;
 import com.darcklh.louise.Model.Louise.BooruTags;
+import com.darcklh.louise.Model.Messages.InMessage;
 import com.darcklh.louise.Model.Messages.Message;
 import com.darcklh.louise.Model.Saito.FeatureStatic;
 import com.darcklh.louise.Model.Saito.PluginInfo;
@@ -53,6 +56,32 @@ class MyLouiseApplicationTests {
         QueryWrapper<BooruImages> query = new QueryWrapper<>();
         List<BooruImages> result = booruImagesDao.selectList(query);
         System.out.println(result);
+    }
+
+
+    void testGet() {
+        String[] a = {"https://gchat.qpic.cn/gchatpic_new/3558790540/3882405198-2366533900-D71428D3D8E8397FD81DCAEC3582BE9D/0?term=255&amp;is_origin=0,file_size=127777", "https://gchat.qpic.cn/offpic_new/412543224//412543224-1138232288-87E55408B107C714457ED28B293DD106/0?term=255&amp;is_origin=1,file_size=154345"};
+        for (String url : a) {
+            new Thread(() -> {
+                String res = OkHttpUtils.builder().url(LouiseConfig.SOURCENAO_URL)
+                        .addParam("url", url)
+                        .addParam("api_key", LouiseConfig.SOURCENAO_API_KEY)
+                        .addParam("db", "999")
+                        .addParam("output_type", "2")
+                        .addParam("numres", "5")
+                        .get()
+                        .async();
+
+                log.info(res);
+            }).start();
+        }
+        try {
+            while (true) {
+                Thread.sleep(1000);
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
 

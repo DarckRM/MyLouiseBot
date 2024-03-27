@@ -51,8 +51,7 @@ public class MessagePost implements AllPost {
 
         String raw = Tool.makeLog(this.getRaw_message());
 
-        builder.append("MessagePost:{User:").append(this.getUser_id()).append("; Group:").append(this.getGroup_id())
-                .append("; Message:").append(raw).append("}");
+        builder.append("消息来自 ").append(this.getSender().getNickname()).append("(").append(this.getUser_id()).append("): ").append(raw);
 
         return builder.toString();
     }

@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.darcklh.louise.Config.LouiseConfig;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
+import org.jetbrains.annotations.NotNull;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
@@ -270,16 +271,16 @@ public class OkHttpUtils {
      * 异步请求，有返回值
      */
     public String async() {
-        StringBuilder buffer = new StringBuilder("");
+        StringBuilder buffer = new StringBuilder();
         setHeader(request);
         okHttpClient.newCall(request.build()).enqueue(new Callback() {
             @Override
-            public void onFailure(Call call, IOException e) {
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
                 buffer.append("请求出错：").append(e.getMessage());
             }
 
             @Override
-            public void onResponse(Call call, Response response) throws IOException {
+            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
                 assert response.body() != null;
                 buffer.append(response.body().string());
                 getSemaphoreInstance().release();

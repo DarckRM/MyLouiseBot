@@ -51,6 +51,7 @@ public class SearchPictureImpl implements SearchPictureService {
 
     /**
      * 通过SourceNAO开放API搜图
+     *
      * @param inMessage 昵称
      * @param url
      * @return
@@ -59,25 +60,22 @@ public class SearchPictureImpl implements SearchPictureService {
     public void findWithSourceNAO(InMessage inMessage, String url) {
         // 构造返回体
         Message message = new Message(inMessage);
-        String res;
-        JSONObject sauceNAO;
 
-        try {
-            log.info("开始请求 sauceNAO 图片上传地址: " + url);
-            res = OkHttpUtils.builder().url(LouiseConfig.SOURCENAO_URL)
-                    .addParam("url", url)
-                    .addParam("api_key", LouiseConfig.SOURCENAO_API_KEY)
-                    .addParam("db", "999")
-                    .addParam("output_type", "2")
-                    .addParam("numres", "5")
-                    .get()
-                    .async();
-        } catch (Exception e) {
-            e.printStackTrace();
-            message.text("请求 SauceNAO 出现异常").fall();
-            return;
+        log.info("开始请求 sauceNAO 图片上传地址: " + url);
+        String res = OkHttpUtils.builder().url(LouiseConfig.SOURCENAO_URL)
+                .addParam("url", url)
+                .addParam("api_key", LouiseConfig.SOURCENAO_API_KEY)
+                .addParam("db", "999")
+                .addParam("output_type", "2")
+                .addParam("numres", "5")
+                .get()
+                .async();
+
+        if (res.equals("")) {
+            message.fall("服务器出错啦，请晚些再试吧");
         }
-        sauceNAO = JSONObject.parseObject(res);
+
+        JSONObject sauceNAO = JSONObject.parseObject(res);
         // 判断结果 Header
         int status = sauceNAO.getJSONObject("header").getInteger("status");
 
@@ -135,8 +133,8 @@ public class SearchPictureImpl implements SearchPictureService {
             JSONObject bestData = bestMatches.get(0).getJSONObject("data");
 
             message.node(Node.build().text("可能性过低的结果\n" + bestHeader.getString("index_name")
-                    + "\n相似度: " + bestHeader.getString("similarity")
-                    + "\n具体信息:\n" + bestData.toJSONString() + "\n")
+                            + "\n相似度: " + bestHeader.getString("similarity")
+                            + "\n具体信息:\n" + bestData.toJSONString() + "\n")
                     .image(bestHeader.getString("thumbnail")), 0).send();
 
             return;
@@ -187,7 +185,7 @@ public class SearchPictureImpl implements SearchPictureService {
 
             HttpHeaders headers = new HttpHeaders();
             headers.add(HttpHeaders.USER_AGENT, "PostmanRuntime/7.26.8");
-            headers.add("Connection","keep-alive");
+            headers.add("Connection", "keep-alive");
 
             HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(params, headers);
             HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory();
@@ -224,7 +222,7 @@ public class SearchPictureImpl implements SearchPictureService {
             //判断来源 Twitter跳过
             String source = element.getElementsByTag("small").text();
             String title = element.child(1).text();
-            String thumbnail = "https://ascii2d.net"+img.attr("src");
+            String thumbnail = "https://ascii2d.net" + img.attr("src");
             ArrayList<String> origin = new ArrayList<>();
             origin.add(element.child(1).attr("href"));
             String member_name = element.child(2).text();
@@ -232,9 +230,9 @@ public class SearchPictureImpl implements SearchPictureService {
 
             if (source.equals("twitter")) {
                 message.text(nickname + "，这是Ascii2d的结果" +
-                        "\n标题: " + title +
-                        "\n作者: " + member_name +
-                        "\n来源推特: " + origin)
+                                "\n标题: " + title +
+                                "\n作者: " + member_name +
+                                "\n来源推特: " + origin)
                         .image(thumbnail).send();
                 return;
             }
@@ -249,7 +247,7 @@ public class SearchPictureImpl implements SearchPictureService {
             resultData.put("invoker", "A2d");
             handleFromPixiv("来自Ascii2d", resultData, resultData, message).send();
         } catch (Exception e) {
-            log.info("请求失败： "+e.getMessage());
+            log.info("请求失败： " + e.getMessage());
             message.text("请求Ascii2d失败了！").send();
         }
     }
@@ -257,8 +255,9 @@ public class SearchPictureImpl implements SearchPictureService {
 
     /**
      * 处理来自Pixiv的图
-     * @param similarity String
-     * @param resultData JSONObject
+     *
+     * @param similarity   String
+     * @param resultData   JSONObject
      * @param resultHeader JSONObject
      * @return JSONObject
      */
@@ -305,7 +304,7 @@ public class SearchPictureImpl implements SearchPictureService {
             int end = index + 2;
             int number = 0;
 
-            while(number < 5) {
+            while (number < 5) {
 
                 if (start < 1 || end > count) {
                     if (start < 1)
@@ -328,32 +327,34 @@ public class SearchPictureImpl implements SearchPictureService {
                 node.image(LouiseConfig.BOT_LOUISE_CACHE_IMAGE + "pixiv/" + pixiv_id + "-" + i + ".jpg").text("\n");
             }
             message.node(node.text(nickname + "，查询出来咯，有" + count + "张结果" + "，精确结果在第" + index + "张" +
-                    "\n来源Pixiv" +
-                    "\n标题:" + title +
-                    "\n作者:" + member_name +
-                    "\n相似度:" + similarity +
-                    "\n可能的图片地址:" + ext_urls + "\n")
+                            "\n来源Pixiv" +
+                            "\n标题:" + title +
+                            "\n作者:" + member_name +
+                            "\n相似度:" + similarity +
+                            "\n可能的图片地址:" + ext_urls + "\n")
                     .image(thumbnail), 0);
             return message;
         } catch (Exception e) {
             log.debug(e.getLocalizedMessage());
             fileControlApi.downloadPicture_RestTemplate(LouiseConfig.PIXIV_PROXY_URL + pixiv_id + ".jpg", pixiv_id + ".jpg", "pixiv");
             message.node(node.text(nickname + "，查询出来咯" +
-                    "\n来源Pixiv" +
-                    "\n标题:" + title +
-                    "\n作者:" + member_name +
-                    "\n相似度:" + similarity +
-                    "\n可能的图片地址:" + ext_urls + "\n")
+                            "\n来源Pixiv" +
+                            "\n标题:" + title +
+                            "\n作者:" + member_name +
+                            "\n相似度:" + similarity +
+                            "\n可能的图片地址:" + ext_urls + "\n")
                     .image(thumbnail)
                     .image(url), 0);
             return message;
         }
     }
+
     /**
      * 处理来自Twitter的图
-     * @param message Message
-     * @param similarity String
-     * @param sourceNaoData JSONObject
+     *
+     * @param message         Message
+     * @param similarity      String
+     * @param sourceNaoData   JSONObject
      * @param sourceNaoHeader JSONObject
      * @return JSONObject
      */
@@ -364,28 +365,30 @@ public class SearchPictureImpl implements SearchPictureService {
         String index_name = sourceNaoHeader.getString("index_name");
 
         String imageUrl;
-        imageUrl = index_name.substring(index_name.indexOf(" - ")+3, index_name.length()-4);
-        String imageUrlEndfix = index_name.substring(index_name.indexOf(".")+1, index_name.indexOf(".")+4);
+        imageUrl = index_name.substring(index_name.indexOf(" - ") + 3, index_name.length() - 4);
+        String imageUrlEndfix = index_name.substring(index_name.indexOf(".") + 1, index_name.indexOf(".") + 4);
         String imageUrlPrefix = "https://pbs.twimg.com/media/";
         String finalUrl = imageUrlPrefix + imageUrl + "?format=" + imageUrlEndfix + "&name=large";
         //TODO 暂时无法下载Twitter的图片
         fileControlApi.downloadPicture_RestTemplate(finalUrl, imageUrl, "Twiiter");
 
-        return message.text(message.getSender().getNickname()+"，查询出来咯"+
-                "\n来源Twitter" +
-                "\n推文用户:" + twitter_user_handle+
-                "\n用户ID:" + twitter_user_id+
-                "\n相似度:" + similarity+
-                "\n图片可能无法正常显示，说明缺乏网络环境，请点击链接访问"+
-                "\n推文地址:" + sourceNaoArray+
-                "\n图片地址:" + finalUrl + "\n")
+        return message.text(message.getSender().getNickname() + "，查询出来咯" +
+                        "\n来源Twitter" +
+                        "\n推文用户:" + twitter_user_handle +
+                        "\n用户ID:" + twitter_user_id +
+                        "\n相似度:" + similarity +
+                        "\n图片可能无法正常显示，说明缺乏网络环境，请点击链接访问" +
+                        "\n推文地址:" + sourceNaoArray +
+                        "\n图片地址:" + finalUrl + "\n")
                 .image(finalUrl);
     }
+
     /**
      * 处理来自Danbooru的图
-     * @param similarity String
+     *
+     * @param similarity    String
      * @param sourceNaoData JSONObject
-     * @param message Message
+     * @param message       Message
      * @return JSONObject
      */
     private Message handleFromGelbooru(String similarity, JSONObject sourceNaoData, Message message) {
@@ -405,7 +408,7 @@ public class SearchPictureImpl implements SearchPictureService {
         String tags = imgJsonObj.getString("tags");
         fileControlApi.downloadPicture_RestTemplate(jpegUrl, fileName, "Gelbooru");
 
-        message.node(node.text(message.getSender().getNickname() + "，查询出来咯"+
+        message.node(node.text(message.getSender().getNickname() + "，查询出来咯" +
                         "\n来源 Gelbooru" +
                         "\n角色:" + characters +
                         "\n作者:" + creator +
@@ -433,7 +436,7 @@ public class SearchPictureImpl implements SearchPictureService {
         String fileName = imgJsonObj.getString("md5") + "." + imgJsonObj.getString("file_ext");
         fileControlApi.downloadPicture_RestTemplate(jpegUrl, fileName, "Yande");
 
-        message.node(node.text(message.getSender().getNickname() + "，查询出来咯"+
+        message.node(node.text(message.getSender().getNickname() + "，查询出来咯" +
                         "\n来源Yande.re" +
                         "\n角色:" + characters +
                         "\n作者:" + creator +
@@ -469,7 +472,7 @@ public class SearchPictureImpl implements SearchPictureService {
             message.text("遗憾, 图片可能已经被删除了😢").send();
             return null;
         }
-        return (JSONObject)returnArray.get(0);
+        return (JSONObject) returnArray.get(0);
     }
 
 }

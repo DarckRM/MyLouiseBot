@@ -55,9 +55,7 @@ public class SearchPictureApi{
         msg.reply().text("开始检索图片").send();
 
         searchPictureCenter(inMessage, finalUrl);
-//        new Thread(() -> {
-//            new Thread(() -> {searchPictureCenter(inMessage, finalUrl); }).start();
-//        }).start();
+
         return null;
     }
 
@@ -69,7 +67,7 @@ public class SearchPictureApi{
      */
     private void searchPictureCenter(InMessage inMessage, String url){
         // TODO 线程名过长
-        LouiseThreadPool.execute(() -> searchPictureService.findWithSourceNAO(inMessage, url));
+        searchPictureService.findWithSourceNAO(inMessage, url);
 //        new Thread(() -> searchPictureService.findWithSourceNAO(inMessage, url), Tool.uniqueThreadName("", "NAO")).start();
         // new Thread(() -> searchPictureService.findWithAscii2d(inMessage, url), Tool.uniqueThreadName("", "A2d")).start();
 
