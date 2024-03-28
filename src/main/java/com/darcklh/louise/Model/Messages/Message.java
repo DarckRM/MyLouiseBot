@@ -51,6 +51,21 @@ public class Message {
         this.setRaw_message(inMessage.getRaw_message());
     }
 
+    /**
+     * 从 Message 构建一个新的 Message 消息内容清空
+     * @param message Message
+     */
+    public Message(Message message) {
+        this.setMessage_type(message.getMessage_type());
+        this.setGroup_id(message.getGroup_id());
+        this.setUser_id(message.getUser_id());
+        this.setSender(message.getSender());
+        this.setMessage_id(message.getMessage_id());
+        this.setPost_type(message.getPost_type());
+        this.setSub_type(message.getSub_type());
+        this.setRaw_message("");
+    }
+
     public Message() {
 
     }

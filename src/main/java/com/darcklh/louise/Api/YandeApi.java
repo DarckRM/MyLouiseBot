@@ -235,7 +235,7 @@ public class YandeApi {
         if (imagePathList == null || imagePathList.size() == 0)
             return;
 //        instantSend(message, imagePathList, Arrays.toString(tags_info), page_nation);
-//        sendImages(message, imagePathList);
+        sendImages(message, imagePathList);
         if (saveBooruImages(resultJsonArray))
             log.warn("图片数据写入数据库成功");
         else
@@ -545,11 +545,8 @@ public class YandeApi {
 
         ArrayList<String[]> uniformArrayList = makeUniformImageList(fileNameList, filePathList, fileUrlList, fileNameList.size());
 
-        if(distributeTask(uniformArrayList, booruApi, DownloadType.FILE, message)) {
+        if(distributeTask(uniformArrayList, booruApi, DownloadType.FILE, message))
             dragonflyUtils.setEx(fileKey, filePathList, 3600);
-            return filePathList;
-        }
-
         return null;
     }
 
@@ -630,12 +627,13 @@ public class YandeApi {
             LouiseThreadPool.execute(() -> {
                 workThread.run((tasks) -> {
                     ArrayList<String> imageList = new ArrayList<>();
+                    Message callBack = new Message(message);
                     for (MultiTaskService mTask : tasks) {
                         DownloadPicTask task = (DownloadPicTask) mTask;
                         String filePath = task.getFileOrigin() + "/" + task.getFileName();
                         imageList.add(filePath);
                     }
-                    sendImages(message, imageList);
+                    sendImages(callBack, imageList);
                 });
             });
         }
