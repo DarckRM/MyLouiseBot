@@ -52,27 +52,22 @@ public class WsServer {
     }
 
     // 和 CQHTTP Reverse WS 的连接状态
-    public boolean isConnect = false;
-
+    private boolean isConnect = false;
     // 监听者计数器，当计数器为 0 时停止接收 WS 的消息
-    public static int listenerCounts = 0;
-
+    private int listenerCounts = 0;
     // 被监听的 QQ 账号链表
-    public static ArrayList<Long> accounts = new ArrayList<>();
-
+    private ArrayList<Long> accounts = new ArrayList<>();
     // 用于存放在监听状态下 WS 接收到的消息体
     private ConcurrentHashMap<Long, InMessage> messageMap = new ConcurrentHashMap<>();
-
     // 存放唯一的和 CQHTTP 的会话
     private Session session;
-    // 控制用户请求时间间隔
-    Map<Long, Map<Integer, Long>> userReqLog = new HashMap<>();
+
     private final String featureIdKey = "model:feature:id:";
 
     public void onOpen(Session session) {
         this.session = session;
         this.isConnect = true;
-        log.info("成功和 go-cqhttp 建立 WebSocket 连接");
+        log.info("成功和 onebot 客户端建立 WebSocket 连接");
     }
 
     @OnClose
@@ -102,43 +97,15 @@ public class WsServer {
     }
 
     // 处理响应式方法
-    public void handleMessagePost(MessagePost post) {
+    private void handleMessagePost(MessagePost post) {
         InMessage inMessage = new InMessage(post);
-        // 向所有监听模式功能发送消息
-        for (Map.Entry<Integer, PluginInfo> entry : PluginManager.pluginInfos.entrySet()) {
-            HashMap<String, Method> messageMap = entry.getValue().getMessagesMap();
-            if (messageMap.size() != 0) {
-                for (Map.Entry<String, Method> keyMethod : messageMap.entrySet()) {
-                    // TODO 以后使用消息段解析
-                    if (inMessage.getRaw_message().matches(keyMethod.getKey())) {
-                        FeatureInfo featureInfo = dragonflyUtils.get(featureIdKey + entry.getValue().getFeature_id(), FeatureInfo.class);
-                        if (!ws.validator.valid(new Message(inMessage), featureInfo))
-                            return;
-                        // 更新调用统计数据
-                        log.info("用户 {} 请求 {} at {}", inMessage.getSender().getNickname() + "(" + inMessage.getUser_id() + ")", entry.getValue().getName(), new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date().getTime()));
-                        ws.featureInfoService.addCount(entry.getValue().getFeature_id(), inMessage.getGroup_id(), inMessage.getUser_id());
-                        LouiseThreadPool.execute(() -> {
-                            try {
-                                keyMethod.getValue().invoke(entry.getValue().getPluginService(), inMessage);
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        });
-                    }
-                }
+        if (listenerCounts != 0) {
+            if (accounts.contains(post.getUser_id())) {
+                addMessage(inMessage);
+                return;
             }
         }
-
-        // 如果当前不处于特殊监听状态则不添加消息到 messageMap 中
-        if (listenerCounts == 0)
-            return;
-
-        // 排除所有不是 message 类型且不属于监听对象的消息上报
-        if (!accounts.contains(post.getUser_id()))
-            return;
-
-        // 向 messageMap 中写入消息体
-        addMessage(inMessage);
+        spreadMessage(inMessage);
     }
 
     private void handleNoticePost(NoticePost post) {
@@ -179,13 +146,41 @@ public class WsServer {
         }
     }
 
-    public static void startWatch(Long userId) {
+    private void spreadMessage(InMessage inMessage) {
+        // 向所有监听模式功能发送消息
+        for (Map.Entry<Integer, PluginInfo> entry : PluginManager.pluginInfos.entrySet()) {
+            HashMap<String, Method> messageMap = entry.getValue().getMessagesMap();
+            if (messageMap.size() == 0)
+                continue;
+
+            for (Map.Entry<String, Method> keyMethod : messageMap.entrySet()) {
+                // TODO 以后使用消息段解析
+                if (!inMessage.getRaw_message().matches(keyMethod.getKey()))
+                    continue;
+                FeatureInfo featureInfo = dragonflyUtils.get(featureIdKey + entry.getValue().getFeature_id(), FeatureInfo.class);
+                if (!ws.validator.valid(new Message(inMessage), featureInfo))
+                    return;
+                // 更新调用统计数据
+                log.info("用户 {} 请求 {} at {}", inMessage.getSender().getNickname() + "(" + inMessage.getUser_id() + ")", entry.getValue().getName(), new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date().getTime()));
+                ws.featureInfoService.addCount(entry.getValue().getFeature_id(), inMessage.getGroup_id(), inMessage.getUser_id());
+                LouiseThreadPool.execute(() -> {
+                    try {
+                        keyMethod.getValue().invoke(entry.getValue().getPluginService(), inMessage);
+                    } catch (Exception e) {
+                        log.error("处理 ws 消息异常: {}", e.getLocalizedMessage());
+                    }
+                });
+            }
+        }
+    }
+
+    private void startWatch(Long userId) {
         // 进入监听模式
         accounts.add(userId);
         listenerCounts++;
     }
 
-    public static void stopWatch(Long userId) {
+    private void stopWatch(Long userId) {
         // 监听计数器减少，移除多余消息
         listenerCounts--;
         ws.messageMap.remove(userId);
@@ -230,7 +225,6 @@ public class WsServer {
         return null;
     }
 
-
     public static void addMessage(InMessage inMessage) {
         ws.syncAddMessage(inMessage);
     }
@@ -239,7 +233,6 @@ public class WsServer {
         messageMap.put(inMessage.getUser_id(), inMessage);
         notifyAll();
     }
-
 
     public interface GoCallBack {
         void call(InMessage inMessage);
