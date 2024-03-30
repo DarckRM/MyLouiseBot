@@ -65,13 +65,13 @@ public class BootApplication {
 
         // 尝试从缓存中获取配置
         log.info("<--加载 MyLouise 配置信息-->");
-        List<SysConfig> list = JSONObject.parseArray(dragonflyUtils.get("sys-config"), SysConfig.class);
+        List<SysConfig> list = JSONObject.parseArray(dragonflyUtils.get("SYS-CONFIG"), SysConfig.class);
         if (list != null) {
             log.info("已从缓存中获取 " + list.size() + " 条系统配置");
             LouiseConfig.refreshConfig(list);
         } else {
             list = sysConfigDao.selectList(null);
-            dragonflyUtils.set("sys-config", JSONObject.toJSONString(list));
+            dragonflyUtils.set("SYS_CONFIG", JSONObject.toJSONString(list));
             LouiseConfig.refreshConfig(list);
         }
 
@@ -92,8 +92,8 @@ public class BootApplication {
 
         //将配置写入 DragonFly 缓存
         log.info("<--加载 MyLouise 功能信息-->");
-        String featureKey = "model:feature:cmd:";
-        String featureIdKey = "model:feature:id:";
+        String featureKey = "MODEL:FEATURE:CMD:";
+        String featureIdKey = "MODEL:FEATURE:ID:";
         List<FeatureInfo> featureInfos = featureInfoService.findBy();
         for (FeatureInfo info : featureInfos) {
             String cmd = info.getFeature_cmd().split(" ")[0];
@@ -106,7 +106,7 @@ public class BootApplication {
         }
 
         log.info("<--加载 MyLouise 权限信息-->");
-        String featureMinKey = "model:feature_min:role_id:";
+        String featureMinKey = "MODEL:FEATURE_MIN:ROLE_ID:";
         List<Role> roles = roleService.findBy();
         if (!roles.isEmpty()) {
             JSONArray array = new JSONArray();
@@ -133,7 +133,7 @@ public class BootApplication {
                     .text("\n成功加载了 " + cronTasks.size() + " 个计划任务")
                     .send();
         } catch (Exception e) {
-            log.info("未能建立与 Cqhttp 的连接 - Louise 系统已启动");
+            log.info("未能建立与协议端的连接 - Louise 系统已启动");
         }
 
     }

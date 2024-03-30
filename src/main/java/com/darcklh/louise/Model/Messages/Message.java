@@ -1,6 +1,7 @@
 package com.darcklh.louise.Model.Messages;
 
 import com.alibaba.fastjson.JSONObject;
+import com.darcklh.louise.Model.GoCqhttp.MessagePost;
 import com.darcklh.louise.Model.R;
 import com.darcklh.louise.Model.Sender;
 import lombok.Data;
@@ -40,7 +41,23 @@ public class Message {
     // 临时会话来源
     private String temp_source;
 
-    public Message (InMessage inMessage) {
+    public Message(MessagePost post) {
+        this.setTime(post.getTime());
+        this.setSelf_id(post.getSelf_id());
+        this.setPost_type(post.getPost_type().name());
+        this.setSub_type(post.getSub_type().name());
+        this.setMessage_id(post.getMessage_id());
+        this.setMessage_type(post.getMessage_type());
+        this.setUser_id(post.getUser_id());
+        this.setGroup_id(post.getGroup_id());
+        // TODO)) 将采取 MessageSegment 解析
+//        this.setMessage(post.getMessage());
+        this.setRaw_message(post.getRaw_message());
+        this.setFont(post.getFont());
+        this.setSender(post.getSender());
+    }
+
+    public Message(InMessage inMessage) {
         this.setMessage_type(inMessage.getMessage_type());
         this.setGroup_id(inMessage.getGroup_id());
         this.setUser_id(inMessage.getUser_id());
@@ -53,6 +70,7 @@ public class Message {
 
     /**
      * 从 Message 构建一个新的 Message 消息内容清空
+     *
      * @param message Message
      */
     public Message(Message message) {
@@ -206,7 +224,7 @@ public class Message {
     }
 
     private void nodesToMessage() {
-        for (Node node : this.nodes ) {
+        for (Node node : this.nodes) {
             this.message.add((JSONObject) JSONObject.toJSON(node));
         }
         this.nodes.clear();

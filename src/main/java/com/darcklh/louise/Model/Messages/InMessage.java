@@ -10,6 +10,7 @@ import lombok.Data;
  * @Description 包含 go-cqhttp 上报的消息体
  */
 @Data
+@Deprecated(since = "该类大部分方法可以由 Message 类覆盖，不再需要")
 public class InMessage {
 
     // 事件发生的时间戳

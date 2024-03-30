@@ -42,9 +42,9 @@ public class FeatureInfoImpl implements FeatureInfoService {
 
     DragonflyUtils dragon = DragonflyUtils.getInstance();
 
-    private final String FEATURE_MIN_KEY_ROLE_ID = "model:feature_min:role_id:";
-    private final String FEATURE_COUNT_KEY = "op:feature_id_count:";
-    private final String FEATURE_STATIC_KEY = "op:feature_static:";
+    private final String FEATURE_MIN_KEY_ROLE_ID = "MODEL:FEATURE_MIN:ROLE_ID:";
+    private final String FEATURE_COUNT_KEY = "OP:FEATURE_ID_COUNT:";
+    private final String FEATURE_STATIC_KEY = "OP:FEATURE_STATIC:";
 
     private int count = 0;
 

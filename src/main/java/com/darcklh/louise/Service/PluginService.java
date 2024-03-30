@@ -14,12 +14,17 @@ public interface PluginService {
 
     /**
      * 请求的 inMessage 作为参数调用函数
-     * @param inMessage
-     * @return
+     * @param inMessage JSONObject
+     * @return JSONObject
      */
+    @Deprecated(since = "大部分方法使用反射的机制去调用，不再需要此方法")
     JSONObject service(InMessage inMessage);
-    JSONObject service();
 
+    /**
+     * 提供一个无参调用的入口
+     * @return JSONObject
+     */
+    JSONObject service();
     /**
      * 插件的初始化函数
      * @return boolean represent init status

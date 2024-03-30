@@ -12,6 +12,7 @@ import java.util.ArrayList;
  * @Description 一种发送给 GO-CQHTTP 的消息类
  */
 @Data
+@Deprecated(since = "该类大部分方法可以由 Message 类覆盖，不再需要")
 public class OutMessage {
     // 消息类型, 支持 private、group , 分别对应私聊、群组, 如不传入, 则根据传入的 *_id 参数判断
     private String message_type;

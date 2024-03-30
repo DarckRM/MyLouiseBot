@@ -57,17 +57,6 @@ public class MyLouiseApi implements ErrorController {
     }
 
     /**
-     * 插件调用中心
-     * @param pluginId
-     * @return
-     */
-    @RequestMapping("/louise/invoke/{pluginId}")
-    public void pluginsCenter(@PathVariable Integer pluginId, @RequestBody InMessage inMessage) {
-        PluginInfo pluginInfo = PluginManager.pluginInfos.get(pluginId);
-        LouiseThreadPool.execute(() -> pluginInfo.getPluginService().service(inMessage));
-    }
-
-    /**
      * 刷新配置
      */
     @RequestMapping("/louise/show")

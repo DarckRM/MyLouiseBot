@@ -7,7 +7,6 @@ import com.darcklh.louise.Model.GoCqhttp.AllPost;
 import com.darcklh.louise.Model.GoCqhttp.MessagePost;
 import com.darcklh.louise.Model.GoCqhttp.NoticePost;
 import com.darcklh.louise.Model.GoCqhttp.RequestPost;
-import com.darcklh.louise.Model.Messages.InMessage;
 import com.darcklh.louise.Model.Messages.Message;
 import com.darcklh.louise.Model.R;
 import com.darcklh.louise.Model.Saito.FeatureInfo;
@@ -56,13 +55,13 @@ public class WsServer {
     // 监听者计数器，当计数器为 0 时停止接收 WS 的消息
     private int listenerCounts = 0;
     // 被监听的 QQ 账号链表
-    private ArrayList<Long> accounts = new ArrayList<>();
+    private final ArrayList<Long> accounts = new ArrayList<>();
     // 用于存放在监听状态下 WS 接收到的消息体
-    private ConcurrentHashMap<Long, InMessage> messageMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Long, Message> messageMap = new ConcurrentHashMap<>();
     // 存放唯一的和 CQHTTP 的会话
     private Session session;
 
-    private final String featureIdKey = "model:feature:id:";
+    private final String FEATURE_ID_KEY = "MODEL:FEATURE:ID:";
 
     public void onOpen(Session session) {
         this.session = session;
@@ -98,14 +97,14 @@ public class WsServer {
 
     // 处理响应式方法
     private void handleMessagePost(MessagePost post) {
-        InMessage inMessage = new InMessage(post);
+        Message message = new Message(post);
         if (listenerCounts != 0) {
             if (accounts.contains(post.getUser_id())) {
-                addMessage(inMessage);
+                addMessage(message);
                 return;
             }
         }
-        spreadMessage(inMessage);
+        spreadMessage(message);
     }
 
     private void handleNoticePost(NoticePost post) {
@@ -146,7 +145,7 @@ public class WsServer {
         }
     }
 
-    private void spreadMessage(InMessage inMessage) {
+    private void spreadMessage(Message message) {
         // 向所有监听模式功能发送消息
         for (Map.Entry<Integer, PluginInfo> entry : PluginManager.pluginInfos.entrySet()) {
             HashMap<String, Method> messageMap = entry.getValue().getMessagesMap();
@@ -154,18 +153,18 @@ public class WsServer {
                 continue;
 
             for (Map.Entry<String, Method> keyMethod : messageMap.entrySet()) {
-                // TODO 以后使用消息段解析
-                if (!inMessage.getRaw_message().matches(keyMethod.getKey()))
+                // TODO)) 以后使用消息段解析
+                if (!message.getRaw_message().matches(keyMethod.getKey()))
                     continue;
-                FeatureInfo featureInfo = dragonflyUtils.get(featureIdKey + entry.getValue().getFeature_id(), FeatureInfo.class);
-                if (!ws.validator.valid(new Message(inMessage), featureInfo))
+                FeatureInfo featureInfo = dragonflyUtils.get(FEATURE_ID_KEY + entry.getValue().getFeature_id(), FeatureInfo.class);
+                if (!ws.validator.valid(message, featureInfo))
                     return;
                 // 更新调用统计数据
-                log.info("用户 {} 请求 {} at {}", inMessage.getSender().getNickname() + "(" + inMessage.getUser_id() + ")", entry.getValue().getName(), new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date().getTime()));
-                ws.featureInfoService.addCount(entry.getValue().getFeature_id(), inMessage.getGroup_id(), inMessage.getUser_id());
+                log.info("用户 {} 请求 {} at {}", message.getSender().getNickname() + "(" + message.getUser_id() + ")", entry.getValue().getName(), new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date().getTime()));
+                ws.featureInfoService.addCount(entry.getValue().getFeature_id(), message.getGroup_id(), message.getUser_id());
                 LouiseThreadPool.execute(() -> {
                     try {
-                        keyMethod.getValue().invoke(entry.getValue().getPluginService(), inMessage);
+                        keyMethod.getValue().invoke(entry.getValue().getPluginService(), message);
                     } catch (Exception e) {
                         log.error("处理 ws 消息异常: {}", e.getLocalizedMessage());
                     }
@@ -190,29 +189,29 @@ public class WsServer {
     /**
      * 指定超时时间和用户ID尝试获取用户发送的消息
      *
-     * @param callBack
-     * @param userId
-     * @param exceedTime
-     * @return InMessage inMessage
+     * @param callBack GoCallBack
+     * @param userId Long
+     * @param exceedTime Long
+     * @return Message
      */
-    public static InMessage getMessage(GoCallBack callBack, Long userId, Long exceedTime) {
+    public static Message getMessage(GoCallBack callBack, Long userId, Long exceedTime) {
         return ws.syncGetMessage(callBack, userId, exceedTime);
     }
 
-    private synchronized InMessage syncGetMessage(GoCallBack callBack, Long userId, Long exceedTime) {
+    private synchronized Message syncGetMessage(GoCallBack callBack, Long userId, Long exceedTime) {
         // 进入监听模式
         startWatch(userId);
         int interval = 0;
-        InMessage inMessage;
+        Message message;
         try {
             log.info("正在监听来自 " + Arrays.toString(accounts.toArray()) + " 的消息");
             while (interval < exceedTime) {
-                inMessage = messageMap.get(userId);
-                if (inMessage != null) {
+                message = messageMap.get(userId);
+                if (message != null) {
                     // 监听计数器减少，移除多余消息
                     stopWatch(userId);
-                    callBack.call(inMessage);
-                    return inMessage;
+                    callBack.call(message);
+                    return message;
                 }
                 wait(1000);
                 interval += 1000;
@@ -225,16 +224,16 @@ public class WsServer {
         return null;
     }
 
-    public static void addMessage(InMessage inMessage) {
-        ws.syncAddMessage(inMessage);
+    public static void addMessage(Message message) {
+        ws.syncAddMessage(message);
     }
 
-    private synchronized void syncAddMessage(InMessage inMessage) {
-        messageMap.put(inMessage.getUser_id(), inMessage);
+    private synchronized void syncAddMessage(Message message) {
+        messageMap.put(message.getUser_id(), message);
         notifyAll();
     }
 
     public interface GoCallBack {
-        void call(InMessage inMessage);
+        void call(Message message);
     }
 }

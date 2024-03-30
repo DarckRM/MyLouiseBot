@@ -49,7 +49,7 @@ public class MessagePost implements AllPost {
     public String log() {
         StringBuilder builder = new StringBuilder();
 
-        String raw = Tool.makeLog(this.getRaw_message());
+        String raw = Tool.makeLog(this.getMessage());
 
         builder.append("消息来自 ").append(this.getSender().getNickname()).append("(").append(this.getUser_id()).append("): ").append(raw);
 

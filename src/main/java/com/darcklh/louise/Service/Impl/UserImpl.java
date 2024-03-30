@@ -21,7 +21,6 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -39,9 +38,9 @@ public class UserImpl extends ServiceImpl<UserDao, User> implements UserService 
     UserDao userDao;
     private boolean isUpdate = true;
 
-    private final String userKey = "model:user:id:";
+    private final String USER_KEY = "MODEL:USER:ID:";
 
-    private final String creditLogKey = "op:credit:id:";
+    private final String CREDIT_LOG_KEY = "OP:CREDIT:ID:";
 
     private int creditEditCount = 0;
 
@@ -117,17 +116,17 @@ public class UserImpl extends ServiceImpl<UserDao, User> implements UserService 
         User user;
         // 缓存的值是最新的
         if (isUpdate()) {
-            user = dragonflyUtils.get(userKey + user_id, User.class);
+            user = dragonflyUtils.get(USER_KEY + user_id, User.class);
             // 如果缓存中没有值则写入
             if (user == null) {
                 user = userDao.selectById(user_id);
-                dragonflyUtils.set(userKey + user_id, user);
+                dragonflyUtils.set(USER_KEY + user_id, user);
             } else {
                 log.debug("用户命中缓存");
             }
         } else {
             user = userDao.selectById(user_id);
-            dragonflyUtils.set(userKey + user_id, user);
+            dragonflyUtils.set(USER_KEY + user_id, user);
         }
         return user;
     }
@@ -158,7 +157,7 @@ public class UserImpl extends ServiceImpl<UserDao, User> implements UserService 
 
     public String banUser(long user_id) {
         String reply = "变更状态失败";
-        User user = dragonflyUtils.get(userKey + user_id, User.class);
+        User user = dragonflyUtils.get(USER_KEY + user_id, User.class);
 
         if (user == null) {
             user = userDao.selectById(user_id);
@@ -170,7 +169,7 @@ public class UserImpl extends ServiceImpl<UserDao, User> implements UserService 
             reply = user.getIsEnabled() == 1 ? "用户" + user_id + "已解封" : "用户" + user_id + "已封禁";
             user.setIsEnabled(-user.getIsEnabled());
 
-            dragonflyUtils.set(userKey + user_id, user);
+            dragonflyUtils.set(USER_KEY + user_id, user);
         }
         return reply;
     }
@@ -189,31 +188,31 @@ public class UserImpl extends ServiceImpl<UserDao, User> implements UserService 
     public int minusCredit(long userId, int credit) {
         // credit 的修改记录进行缓存 达到一定阈值写入数据库
         creditEditCount++;
-        String stringCredit = dragonflyUtils.get(creditLogKey + userId);
+        String stringCredit = dragonflyUtils.get(CREDIT_LOG_KEY + userId);
         int balance = 0;
         if (stringCredit != null) {
             balance = Integer.parseInt(stringCredit);
             balance -= credit;
-            dragonflyUtils.set(creditLogKey + userId, String.valueOf(balance));
+            dragonflyUtils.set(CREDIT_LOG_KEY + userId, String.valueOf(balance));
         } else {
             User user = userDao.selectById(userId);
             balance = user.getCredit() - credit;
             if (balance < 0)
                 return balance;
             userDao.minusCredit(credit, userId);
-            dragonflyUtils.set(creditLogKey + userId, balance);
+            dragonflyUtils.set(CREDIT_LOG_KEY + userId, balance);
             log.info("用户 " + userId + " CREDIT 余额还有 " + balance);
         }
 
         if (creditEditCount == 30) {
             LouiseThreadPool.execute(() -> {
                 log.info("log Credit 缓存数据持久化");
-                List<String> ids = dragonflyUtils.scan(creditLogKey);
+                List<String> ids = dragonflyUtils.scan(CREDIT_LOG_KEY);
                 List<User> users = userDao.selectBatchIds(ids);
                 for (User user : users) {
-                    userDao.updateCredit(user.getUser_id(), Integer.parseInt(dragonflyUtils.get(creditLogKey + user.getUser_id())));
+                    userDao.updateCredit(user.getUser_id(), Integer.parseInt(dragonflyUtils.get(CREDIT_LOG_KEY + user.getUser_id())));
                 }
-                dragonflyUtils.remove(creditLogKey);
+                dragonflyUtils.remove(CREDIT_LOG_KEY);
                 creditEditCount = 0;
             });
         }
