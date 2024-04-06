@@ -7,6 +7,7 @@ import com.darcklh.louise.Config.LouiseConfig;
 import com.darcklh.louise.Mapper.UserDao;
 import com.darcklh.louise.Model.InnerException;
 import com.darcklh.louise.Model.Louise.User;
+import com.darcklh.louise.Model.Messages.Message;
 import com.darcklh.louise.Model.Messages.OutMessage;
 import com.darcklh.louise.Model.ReplyException;
 import com.darcklh.louise.Model.Sender;
@@ -54,28 +55,21 @@ public class UserImpl extends ServiceImpl<UserDao, User> implements UserService 
     }
 
     public JSONObject joinLouise(long user_id, long group_id) {
-
-        log.info("进入注册流程");
         log.info("用户来自群: " + group_id + " QQ号: " + user_id);
         JSONObject jsonObject = new JSONObject();
         //判断用户是否注册
         long[] users_id = findAllUserID();
         for (long id : users_id)
             if (id == user_id) {
-                OutMessage out = new OutMessage();
-                out.setGroup_id(group_id);
-                out.setMessage("你已经注册过了哦，请使用 !help 获取其它帮助信息吧，更加建议私聊哦");
-                out.setSender(new Sender(Long.parseLong(LouiseConfig.BOT_ACCOUNT), "Louise", "1", 16));
                 log.warn("用户 " + user_id + " 已注册");
-                throw new ReplyException(out);
+                Message message = new Message();
+                message.setGroup_id(group_id);
+                message.setSender(new Sender(Long.parseLong(LouiseConfig.BOT_ACCOUNT), "Louise", "1", 16));
+                message.text("你已经注册过了哦，请使用 !help 获取其它帮助信息吧，更加建议私聊哦").fall();
             }
 
         //构造Rest请求模板
         RestTemplate restTemplate = new RestTemplate();
-        //请求go-cqhhtp的参数和请求头
-        HttpHeaders headers= new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
         //构造请求体
         JSONObject userInfo = new JSONObject();
         userInfo.put("user_id", user_id);
@@ -103,11 +97,14 @@ public class UserImpl extends ServiceImpl<UserDao, User> implements UserService 
 
         if (userDao.insert(user) == 0) {
             jsonObject.put("reply", "注册失败了，遗憾！请稍后再试吧");
+            jsonObject.put("tag", 0);
             log.warn("用户 " + user.getUser_id() + "(" + user.getNickname() + ") 注册失败!");
         }
-        else
-            jsonObject.put("reply","注册成功了！请输入!help获得进一步帮助");
-        log.info("用户 " + user.getUser_id() + "(" + user.getNickname() + ") 注册成功!");
+        else {
+            jsonObject.put("reply", "注册成功了！请输入!help获得进一步帮助");
+            jsonObject.put("tag", 1);
+            log.info("用户 " + user.getUser_id() + "(" + user.getNickname() + ") 注册成功!");
+        }
         return jsonObject;
     }
 
