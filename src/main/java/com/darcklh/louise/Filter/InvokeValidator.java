@@ -1,5 +1,6 @@
 package com.darcklh.louise.Filter;
 
+import com.alibaba.fastjson.JSONObject;
 import com.darcklh.louise.Config.LouiseConfig;
 import com.darcklh.louise.Model.Messages.InMessage;
 import com.darcklh.louise.Model.Messages.Message;
@@ -93,8 +94,13 @@ public class InvokeValidator {
         // 判断用户是否存在并启用
         if (user == null) {
             log.info("未登记的用户 {}", userInfo);
-            message.reply().at().text("请在群内发送 !join 以启用你的使用权限").send();
-            return false;
+            // 直接注册用户
+            JSONObject json = userService.joinLouise(userId, groupId);
+            int t = json.getInteger("tag");
+            if (t != 1) {
+                message.reply().at().text("自动注册失败了，请在群里发送!join重试").send();
+                return false;
+            }
         } else if (user.getIsEnabled() != 1) {
             log.info("未启用的用户 {}", userInfo);
             message.reply().at().text("你的权限已被暂时禁用").send();
@@ -102,12 +108,18 @@ public class InvokeValidator {
         }
 
         // 判断群聊还是私聊
-        if (message.getGroup_id() != -1) {
+        if (groupId != -1) {
             Group group = groupService.selectById(groupId);
             if (group == null) {
                 log.info("未注册的群组: {}", groupId);
-                message.reply().at().text("群聊还没有在露易丝中注册哦").send();
-                return false;
+                group = new Group();
+                group.setGroup_id(groupId);
+                group.setIs_enabled(1);
+                String reply = groupService.add(group);
+                if (!reply.contains("成功")) {
+                    message.reply().at().text("群聊自动注册失败了，请发送!group_join重试").send();
+                    return false;
+                }
             }
 
             if (group.getIs_enabled() != 1) {
