@@ -95,7 +95,7 @@ public class PluginInfoImpl implements PluginInfoService {
         try {
             pluginManager.loadPlugins(pluginInfos);
         } catch (Exception e) {
-            log.info("加载插件失败: " + e.getMessage());
+            log.error("加载插件失败: " + e.getMessage());
         }
         return pluginInfos;
     }
