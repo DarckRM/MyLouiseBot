@@ -96,9 +96,10 @@ public class Message {
         return new Message(inMessage);
     }
 
-    public void clear() {
+    public Message clear() {
         this.message.clear();
         this.nodes.clear();
+        return this;
     }
 
     public Message at(Long user_id) {

@@ -4,7 +4,6 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.darcklh.louise.Mapper.GroupDao;
 import com.darcklh.louise.Model.Louise.Group;
-import com.darcklh.louise.Model.Messages.OutMessage;
 import com.darcklh.louise.Model.R;
 import com.darcklh.louise.Model.VO.GroupRole;
 import com.darcklh.louise.Service.GroupService;

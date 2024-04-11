@@ -1,7 +1,6 @@
 package com.darcklh.louise.Model;
 
 import com.alibaba.fastjson.JSONObject;
-import com.darcklh.louise.Model.Messages.InMessage;
 import lombok.Data;
 
 import java.io.IOException;

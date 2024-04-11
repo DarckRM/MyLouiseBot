@@ -24,7 +24,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.Instant;
@@ -59,47 +58,43 @@ public class YandePlugin implements PluginService {
     public String pluginName() {
         return "yande";
     }
-
     @Override
-    public JSONObject service(InMessage inMessage) {
+    public JSONObject service(Message message) {
         return null;
     }
-
     @Override
     public JSONObject service() {
         return null;
     }
-
     @Override
     public boolean init(Environment env) {
         return false;
     }
-
     @Override
     public boolean reload() {
         return false;
     }
-
     @OnMessage(messages = {"yande/help"})
     public void yandeHelp(Message message) {
-        message.reply().text("所有符号请使用英文符号\n")
+        message.clear().reply().text("所有符号请使用英文符号\n")
                 .text("用例: yande/day \n说明: 请求今日好图，day可为week,month\n\n")
                 .text("用例: yande 初音未来 \n说明: 初音未来相关图片，可用空格分隔最大4个标签\n\n")
                 .text("用例: yande hatsune_miku 2 10 \n说明: 初音未来相关图片第2页的10张，只有一个参数就只算页数\n\n")
                 .text("用例: yande/tags miku \n说明: 查询和miku有关的标签，翻页方法和上面一致\n\n")
                 .send();
     }
-
     /**
      * 向数据库追加一条图站词条对照记录
      */
-    public JSONObject addBooruTag(InMessage inMessage) {
+    @OnMessage(messages = {"yande/add"})
+    public JSONObject addBooruTag(Message msg) {
 
         JSONObject reply = new JSONObject();
-        Message msg = Message.build(inMessage);
-        long user_id = inMessage.getUser_id();
+        long user_id = msg.getUser_id();
         // 解析命令
-        String message = inMessage.getMessage();
+        String message = msg.getRaw_message();
+        msg.clear();
+
         String[] tags = message.split(" ");
         ArrayList<String> tag_array = new ArrayList<>(Arrays.asList(tags));
         tag_array.removeIf(s -> s.equals(""));
@@ -166,36 +161,34 @@ public class YandePlugin implements PluginService {
             return reply;
         }
     }
-
     /**
      * Konachan 同属 Booru 类型图站
      * 和 Yande 放在一起处理
      */
-    public JSONObject konachanTags(InMessage inMessage) {
+    @OnMessage(messages = {"kona/tags .*"})
+    public JSONObject konachanTags(Message message) {
         // 处理命令前缀
         String[] msg;
-        msg = inMessage.getMessage().split(" ");
+        msg = message.getRaw_message().split(" ");
         if (msg.length <= 1)
-            throw new ReplyException("参数错误，请按如下格式尝试 !konachan/tags [参数]");
-        return requestTags(msg, "https://konachan.com/tag.json?name=", inMessage);
+            throw new ReplyException("参数错误，请按如下格式尝试 !kona/tags [参数]");
+        return requestTags(msg, "https://konachan.com/tag.json?name=", message);
     }
-
-
     /**
      * 根据 Tag 返回可能的 Tags 列表
      */
-    public JSONObject yandeTags(InMessage inMessage) {
-
+    @OnMessage(messages = {"yande/tags .*"})
+    public JSONObject yandeTags(Message message) {
         // 处理命令前缀
         String[] msg;
-        msg = inMessage.getMessage().split(" ");
+        msg = message.getRaw_message().split(" ");
         if (msg.length <= 1)
             throw new ReplyException("参数错误，请按如下格式尝试 !yande/tags [参数]");
-        return requestTags(msg, "https://yande.re/tag.json?name=", inMessage);
+        return requestTags(msg, "https://yande.re/tag.json?name=", message);
     }
 
     /**
-     * 获取 Yandere 每日图片
+     * 获取 Yande.re 每日图片
      */
     @OnMessage(messages = "yande/(day|week|month)")
     public void yandePic(Message message) {
@@ -207,14 +200,25 @@ public class YandePlugin implements PluginService {
         String type = message.getRaw_message().replace("yande/", "");
         requestPopular("https://yande.re/post/popular_by_", "Yande", type, message);
     }
-
-    public JSONObject konachanSearch(InMessage inMessage) {
-        requestBooru("https://konachan.com/post.json?tags=", "Konachan", inMessage);
+    @OnMessage(messages = "kona/(day/week/month)")
+    public JSONObject konachanPic(Message message) {
+        // TODO)) 考虑到 Yande 站的每日图片功能并不好做过滤，当群聊时转化成一般 Tag 请求
+        if (message.getGroup_id() > 0) {
+            message.setRaw_message("!kona *");
+            requestBooru("https://konachan.com/post.json?tags=", "Konachan", message);
+            return null;
+        }
+        String type = message.getRaw_message().replace("kona/", "");
+        return requestPopular("https://konachan.com/post/popular_by_", "Konachan", type, message);
+    }
+    @OnMessage(messages = "kona .*")
+    public JSONObject konachanSearch(Message message) {
+        requestBooru("https://konachan.com/post.json?tags=", "Konachan", message);
         return null;
     }
-
-    public JSONObject yandeSearch(InMessage inMessage) {
-        requestBooru("https://yande.re/post.json?tags=", "Yande", inMessage);
+    @OnMessage(messages = "yande .*")
+    public JSONObject yandeSearch(Message message) {
+        requestBooru("https://yande.re/post.json?tags=", "Yande", message);
         return null;
     }
 
@@ -287,17 +291,16 @@ public class YandePlugin implements PluginService {
         return false;
     }
 
-    private void requestBooru(String url, String target, InMessage inMessage) {
-        Message msg = Message.build(inMessage);
+    private void requestBooru(String url, String target, Message message) {
         // 判断是否携带 Tags 参数
-        if (inMessage.getMessage().length() < 7) {
-            msg.reply().text("请至少携带一个 Tag 参数，像这样 !yande 参数1 参数2 页数 条数\n页数和条数可以不用指定").send();
+        if (message.getRaw_message().length() < 7) {
+            message.clear().reply().text("请至少携带一个 Tag 参数，像这样 !yande 参数1 参数2 页数 条数\n页数和条数可以不用指定").send();
             return;
         }
 
         // 处理命令前缀
-        String message = inMessage.getMessage();
-        message = message.substring(message.indexOf(' '));
+        String text = message.getRaw_message();
+        text = text.substring(text.indexOf(' '));
         String[] tags;
         String[] tags_info;
         String[] pageNation = new String[2];
@@ -305,7 +308,7 @@ public class YandePlugin implements PluginService {
         pageNation[1] = "10";
 
         // 格式化 Message
-        tags = message.trim().split(" ");
+        tags = text.trim().split(" ");
         ArrayList<String> tag_array = new ArrayList<>(Arrays.asList(tags));
         tag_array.removeIf(s -> s.equals(""));
 
@@ -315,10 +318,10 @@ public class YandePlugin implements PluginService {
         while (it.hasNext()) {
             String tag = it.next();
             if (pos > 1)
-                msg.reply().text("分页参数只有两个啦 页数 条数 (ﾟдﾟ)").fall("非法参数请求");
+                message.clear().reply().text("分页参数只有两个啦 页数 条数 (ﾟдﾟ)").fall("非法参数请求");
             try {
                 if (Integer.parseInt(tag) < 0)
-                    msg.reply().text("暂不支持负数分页 (*´д`)").fall("非法参数请求");
+                    message.clear().reply().text("暂不支持负数分页 (*´д`)").fall("非法参数请求");
                 pageNation[pos] = tag;
                 pos++;
                 it.remove();
@@ -328,7 +331,7 @@ public class YandePlugin implements PluginService {
         }
 
         // 如果群聊加上过滤 tag
-        if (msg.getGroup_id() != -1)
+        if (message.getGroup_id() != -1)
             tag_array.add(SAFE_KEYWORD);
 
         tags = tag_array.toArray(new String[0]);
@@ -348,7 +351,7 @@ public class YandePlugin implements PluginService {
                     // 如果返回了多个结果 优先考虑创建者的 QQ 匹配
                     if (booru_list.size() > 1)
                         for (BooruTags bt : booru_list)
-                            if (bt.getInfo().equals(String.valueOf(inMessage.getUser_id())))
+                            if (bt.getInfo().equals(String.valueOf(message.getUser_id())))
                                 booru_list.set(0, bt);
 
                     if (booru_list.get(0).getInfo() == null)
@@ -373,7 +376,7 @@ public class YandePlugin implements PluginService {
 
         // pageNation 只准接收两个参数
         if (tags.length > 12) {
-            msg.reply().text("标签最大只允许 12 个哦").fall("过多的参数");
+            message.clear().reply().text("标签最大只允许 12 个哦").fall("过多的参数");
             return;
         }
 
@@ -389,13 +392,13 @@ public class YandePlugin implements PluginService {
         if (dragon != null) {
             log.info("已找到 Dragonfly 缓存");
             String page_nation = pageNation[0] + "页/" + pageNation[1] + "条";
-            instantSend(Message.build(inMessage), dragon, Arrays.toString(tags_info), page_nation);
+            instantSend(message, dragon, Arrays.toString(tags_info), page_nation);
             return;
         }
 
         LouiseThreadPool.execute(() -> {
             // 构造消息请求体
-            Message outMessage = Message.build(inMessage);
+            Message outMessage = new Message(message);
             outMessage.reply().text("开始检索 Yande 图库咯").send();
             StringBuilder tagsParam = new StringBuilder();
             // 构造 Tags 参数
@@ -416,7 +419,7 @@ public class YandePlugin implements PluginService {
                 return;
             }
             try {
-                sendYandeResult(Message.build(inMessage), resultJsonArray, Integer.parseInt(pageNation[1]), Integer.parseInt(pageNation[0]), target, final_tags_info, Arrays.toString(finalTags));
+                sendYandeResult(new Message(message), resultJsonArray, Integer.parseInt(pageNation[1]), Integer.parseInt(pageNation[0]), target, final_tags_info, Arrays.toString(finalTags));
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -438,7 +441,7 @@ public class YandePlugin implements PluginService {
         // 尝试从缓存获取
         LouiseThreadPool.execute(() -> {
             // 构造消息请求体
-            message.at().text("开始寻找今天的精选图片~").send();
+            message.clear().at().text("开始寻找今天的精选图片~").send();
             // 使用代理请求 Yande
             String result = OkHttpUtils.builder().url(finalUri).
                     addParam("limit", Integer.toString(LIMIT)).
@@ -462,7 +465,7 @@ public class YandePlugin implements PluginService {
         return null;
     }
 
-    private JSONObject requestTags(String[] msg, String uri, InMessage inMessage) {
+    private JSONObject requestTags(String[] msg, String uri, Message message) {
         String tag = msg[1];
         // 返回值
         JSONObject returnJson = new JSONObject();
@@ -477,7 +480,7 @@ public class YandePlugin implements PluginService {
 
         String result = restTemplate.getForObject(uri, String.class);
         log.info("请求 Yande: " + uri);
-        StringBuilder tagList = new StringBuilder(inMessage.getSender().getNickname() + ", 你是否在找?\n");
+        StringBuilder tagList = new StringBuilder(message.getSender().getNickname() + ", 你是否在找?\n");
         JSONArray resultJsonArray = JSON.parseArray(result);
 
         assert resultJsonArray != null;
@@ -502,7 +505,7 @@ public class YandePlugin implements PluginService {
             };
             tagList.append(name).append(" 类型: ").append(type).append(" 有 ").append(count).append(" 张 \r\n");
         }
-        Message.build(inMessage).node(Node.build().text(tagList.toString())).send();
+        message.clear().node(Node.build().text(tagList.toString())).send();
         return null;
     }
 
@@ -596,7 +599,7 @@ public class YandePlugin implements PluginService {
             booruApi = "sample/" + booruApi;
         }
         for (String[] image : imageList) {
-            String filePath = LouiseConfig.LOUISE_CACHE_IMAGE_LOCATION + booruApi + "/" + image[0];
+//            String filePath = LouiseConfig.LOUISE_CACHE_IMAGE_LOCATION + booruApi + "/" + image[0];
 //            if (fileControlApi.checkFileExist(filePath))
 //                continue;
             taskList.add(new DownloadPicTask(0, image[2], image[0], booruApi, fileControlApi));

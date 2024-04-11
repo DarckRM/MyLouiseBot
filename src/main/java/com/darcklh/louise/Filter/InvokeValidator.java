@@ -2,24 +2,20 @@ package com.darcklh.louise.Filter;
 
 import com.alibaba.fastjson.JSONObject;
 import com.darcklh.louise.Config.LouiseConfig;
-import com.darcklh.louise.Model.Messages.InMessage;
 import com.darcklh.louise.Model.Messages.Message;
 import com.darcklh.louise.Model.Louise.Group;
 import com.darcklh.louise.Model.Louise.User;
 import com.darcklh.louise.Model.Saito.FeatureInfo;
-import com.darcklh.louise.Model.Saito.PluginInfo;
 import com.darcklh.louise.Model.VO.FeatureInfoMin;
 import com.darcklh.louise.Service.FeatureInfoService;
 import com.darcklh.louise.Service.GroupService;
 import com.darcklh.louise.Service.UserService;
-import com.darcklh.louise.Utils.DragonflyUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StopWatch;
 
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -144,6 +140,7 @@ public class InvokeValidator {
 
         tag = false;
 
+        assert user != null;
         List<FeatureInfoMin> featureInfoMins = featureInfoService.findWithRoleId(user.getRole_id());
         log.debug("| 用户允许的功能列表: {}", formatList(featureInfoMins));
         for (FeatureInfoMin featureInfoMin : featureInfoMins) {

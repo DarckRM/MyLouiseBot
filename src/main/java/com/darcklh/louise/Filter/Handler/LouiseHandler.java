@@ -2,12 +2,10 @@ package com.darcklh.louise.Filter.Handler;
 
 import com.alibaba.fastjson.JSON;
 import com.darcklh.louise.Filter.InvokeValidator;
-import com.darcklh.louise.Model.Messages.InMessage;
 import com.darcklh.louise.Model.Messages.Message;
 import com.darcklh.louise.Model.ReplyException;
 import com.darcklh.louise.Model.Saito.FeatureInfo;
 import com.darcklh.louise.Model.Saito.PluginInfo;
-import com.darcklh.louise.Model.VO.FeatureInfoMin;
 import com.darcklh.louise.Service.*;
 import com.darcklh.louise.Utils.HttpServletWrapper;
 import org.jetbrains.annotations.NotNull;
@@ -22,8 +20,6 @@ import org.springframework.web.servlet.ModelAndView;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import java.util.*;
-
 /**
  * @author DarckLH
  * @date 2021/8/12 12:41
@@ -31,15 +27,7 @@ import java.util.*;
  */
 @Component
 public class LouiseHandler implements HandlerInterceptor {
-
     Logger logger = LoggerFactory.getLogger(LouiseHandler.class);
-
-    // 控制用户请求时间间隔
-    Map<Long, Map<Integer, Long>> userReqLog = new HashMap<>();
-    @Autowired
-    UserService userService;
-    @Autowired
-    GroupService groupService;
     @Autowired
     FeatureInfoService featureInfoService;
     @Autowired
@@ -57,10 +45,10 @@ public class LouiseHandler implements HandlerInterceptor {
         String body = wrapper.getBody();
         logger.debug("拦截器请求Body: {}", body);
 
-        InMessage inMessage = JSON.parseObject(body).toJavaObject(InMessage.class);
+        Message inMessage = JSON.parseObject(body).toJavaObject(Message.class);
 
         long userId = inMessage.getUser_id();
-        String message = inMessage.getMessage();
+        String message = inMessage.getRaw_message();
 
         //对command预处理
         String[] commands = message.split(" ");
@@ -72,7 +60,6 @@ public class LouiseHandler implements HandlerInterceptor {
         else
             // 如果不携带参数，那么构造命令是否允许无参请求查询条件
             command += " %";
-
 
         // 获取请求的功能对象
         FeatureInfo featureInfo = featureInfoService.findWithFeatureCmd(command, userId);
@@ -97,19 +84,11 @@ public class LouiseHandler implements HandlerInterceptor {
     }
 
     @Override
-    public void postHandle(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, Object o, ModelAndView modelAndView) throws Exception {
+    public void postHandle(@NotNull HttpServletRequest httpServletRequest, @NotNull HttpServletResponse httpServletResponse, @NotNull Object o, ModelAndView modelAndView) {
     }
 
     @Override
-    public void afterCompletion(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse, Object o, Exception e) throws Exception {
+    public void afterCompletion(@NotNull HttpServletRequest httpServletRequest, @NotNull HttpServletResponse httpServletResponse, @NotNull Object o, Exception e) {
     }
 
-    private String formatList(List<FeatureInfoMin> list) {
-        StringBuilder result = new StringBuilder();
-        for (FeatureInfoMin min : list) {
-            result.append(min.getFeature_id()).append(":").append(min.getFeature_name()).append("; ");
-        }
-        result.append("]");
-        return result.toString();
-    }
 }

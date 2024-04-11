@@ -2,7 +2,7 @@ package com.darcklh.louise.Service;
 
 import com.alibaba.fastjson.JSONObject;
 import com.darcklh.louise.Model.Enum.Environment;
-import com.darcklh.louise.Model.Messages.InMessage;
+import com.darcklh.louise.Model.Messages.Message;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
@@ -10,15 +10,18 @@ import org.springframework.stereotype.Service;
 @Scope("singleton")
 public interface PluginService {
 
+    /**
+     * @return String
+     */
     String pluginName();
 
     /**
      * 请求的 inMessage 作为参数调用函数
-     * @param inMessage JSONObject
+     * @param message Message
      * @return JSONObject
      */
     @Deprecated(since = "大部分方法使用反射的机制去调用，不再需要此方法")
-    JSONObject service(InMessage inMessage);
+    JSONObject service(Message message);
 
     /**
      * 提供一个无参调用的入口

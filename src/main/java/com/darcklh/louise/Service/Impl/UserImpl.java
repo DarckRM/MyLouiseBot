@@ -8,8 +8,6 @@ import com.darcklh.louise.Mapper.UserDao;
 import com.darcklh.louise.Model.InnerException;
 import com.darcklh.louise.Model.Louise.User;
 import com.darcklh.louise.Model.Messages.Message;
-import com.darcklh.louise.Model.Messages.OutMessage;
-import com.darcklh.louise.Model.ReplyException;
 import com.darcklh.louise.Model.Sender;
 import com.darcklh.louise.Model.VO.UserRole;
 import com.darcklh.louise.Service.UserService;
@@ -17,8 +15,6 @@ import com.darcklh.louise.Utils.DragonflyUtils;
 import com.darcklh.louise.Utils.LouiseThreadPool;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 

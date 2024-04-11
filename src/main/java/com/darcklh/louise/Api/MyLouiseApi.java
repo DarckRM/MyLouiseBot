@@ -6,15 +6,10 @@ import com.darcklh.louise.Config.LouiseConfig;
 import com.darcklh.louise.Model.Louise.Group;
 import com.darcklh.louise.Model.Louise.Role;
 import com.darcklh.louise.Model.Louise.User;
-import com.darcklh.louise.Model.Messages.InMessage;
 import com.darcklh.louise.Model.Messages.Message;
 import com.darcklh.louise.Model.ReplyException;
-import com.darcklh.louise.Model.Saito.PluginInfo;
 import com.darcklh.louise.Service.*;
-import com.darcklh.louise.Utils.LouiseThreadPool;
-import com.darcklh.louise.Utils.PluginManager;
 import com.darcklh.louise.Utils.Tool;
-import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,55 +18,32 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.*;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-@Slf4j
 @RestController
 public class MyLouiseApi implements ErrorController {
-    Logger logger = LoggerFactory.getLogger(MyLouiseApi.class);
-
+    private final Logger log = LoggerFactory.getLogger(MyLouiseApi.class);
     @Autowired
-    private SendPictureApi sendPictureApi;
-
+    GroupService groupService;
     @Autowired
-    private GroupService groupService;
-
+    UserService userService;
     @Autowired
-    private UserService userService;
-
+    RoleService roleService;
     @Autowired
-    private RoleService roleService;
-
-    @Autowired
-    private CBIRService cbirService;
-
-    /**
-     * 用于接收各类请求 但不做任何处理
-     */
-    @RequestMapping("/louise/*")
-    public String handleRequest() {
-        return "不存在的 URL";
-    }
-
-    /**
-     * 刷新配置
-     */
-    @RequestMapping("/louise/show")
-    public String refreshConfig() {
-        return "API: " + LouiseConfig.BOT_LOUISE_CACHE_IMAGE;
-    }
+    CBIRService cbirService;
 
     /**
      * 返回帮助信息
-     * @return
+     * @param message Message
+     * @return JSONObject
      */
     @RequestMapping("louise/help")
-    public JSONObject help(@RequestBody InMessage inMessage) {
-        Message msg = Message.build(inMessage);
-        String[] args = inMessage.getMessage().split(" ");
+    public JSONObject help(@RequestBody Message message) {
+        String[] args = message.getRaw_message().split(" ");
         JSONObject returnJson = new JSONObject();
         int intPage = 1;
         String page = "1";
@@ -86,15 +58,14 @@ public class MyLouiseApi implements ErrorController {
         }
         if (intPage >= 3)
             throw new ReplyException("现在还没有那么多帮助页面");
-        msg.image(LouiseConfig.LOUISE_HELP_PAGE + page + ".png")
-                .send();
+        message.clear().image(LouiseConfig.LOUISE_HELP_PAGE + page + ".png").send();
         return returnJson;
     }
 
     /**
      * 封禁用户
-     * @param message
-     * @return
+     * @param message Message
+     * @return JSONObject
      */
     @RequestMapping("louise/ban")
     public JSONObject banUser(@RequestBody JSONObject message) {
@@ -109,55 +80,15 @@ public class MyLouiseApi implements ErrorController {
         return reply;
     }
 
-    @RequestMapping("louise/config/{type}")
-    public JSONObject modifyConfig(@RequestBody JSONObject message, @PathVariable Integer type) {
-        JSONObject reply = new JSONObject();
-        String admin = message.getString("user_id");
-        if (!admin.equals(LouiseConfig.LOUISE_ADMIN_NUMBER)) {
-            reply.put("reply", "管理员限定");
-            return reply;
-        }
-        if (type == 0) {
-            LouiseConfig.BOT_LOUISE_CACHE_IMAGE = "../../../../MyLouise/cache/images/";
-            logger.info("切换至 本地开发 配置");
-            reply.put("reply", "切换到本地开发环境");
-        } else {
-            LouiseConfig.BOT_LOUISE_CACHE_IMAGE = "../../MyLouise/cache/images/";
-            logger.info("切换至 线上部署 配置");
-            reply.put("reply", "切换到服务部署环境");
-        }
-        return reply;
-    }
-
-    /**
-     * 查询当前系统配置
-     * @return
-     */
-    @RequestMapping("louise/config")
-    public JSONObject queryConfig() {
-        JSONObject reply = new JSONObject();
-        reply.put("reply", "开发中");
-        return reply;
-    }
-
-    @RequestMapping("louise/test")
-    public void testRequestCenter(@RequestBody InMessage inMessage) {
-        log.info(inMessage.toString());
-    }
-
-    @RequestMapping("louise/meta")
-    public JSONObject metaRequestCenter() {
-        return null;
-    }
-
     /**
      * 注册新群组
-     * @return
+     * @param message Message
+     * @return JSONObject
      */
     @RequestMapping("louise/group_join")
-    public JSONObject groupJoin(@RequestBody InMessage inMessage) {
+    public JSONObject groupJoin(@RequestBody Message message) {
 
-        Long group_id = inMessage.getGroup_id();
+        Long group_id = message.getGroup_id();
         Group group = new Group();
         group.setGroup_id(group_id);
         //快速返回
@@ -175,12 +106,13 @@ public class MyLouiseApi implements ErrorController {
 
     /**
      * 更新群组信息
-     * @param inMessage
-     * @return
+     *
+     * @param message Message
+     * @return JSONObject
      */
     @RequestMapping("louise/group_update")
-    public JSONObject groupUpdate(@RequestBody InMessage inMessage) {
-        long group_id = inMessage.getGroup_id();
+    public JSONObject groupUpdate(@RequestBody Message message) {
+        long group_id = message.getGroup_id();
         Group group = new Group();
         group.setGroup_id(group_id);
         //快速返回
@@ -199,7 +131,7 @@ public class MyLouiseApi implements ErrorController {
         for (String s : group_admins.split(",")) {
             long admin = Long.parseLong(s);
             // 如果发言者是该群的管理员，那么允许更新群聊
-            if(admin == inMessage.getUser_id())
+            if (admin == message.getUser_id())
                 break;
             else
                 returnJson.put("reply", "露易丝只允许群管理员进行更新哦，请联系管理员吧");
@@ -212,76 +144,48 @@ public class MyLouiseApi implements ErrorController {
 
     /**
      * 注册新用户
-     * @param inMessage
-     * @return
+     *
+     * @param message Message
+     * @return JSONObject
      */
     @RequestMapping("louise/join")
-    public JSONObject join(@RequestBody InMessage inMessage) {
-
-        long user_id = inMessage.getUser_id();
-        long group_id = inMessage.getGroup_id();
-
-        //快速返回
-        JSONObject returnJson = new JSONObject();
-        //注册用户
-        //判断如果是私聊禁止注册
+    public JSONObject join(@RequestBody Message message) {
+        long user_id = message.getUser_id();
+        long group_id = message.getGroup_id();
         if (group_id == -1) {
-            //TODO go-cqhttp只能根据qq号和群号获取某个用户的信息 但是这会导致数据库中使用双主键 比较麻烦 后期解决一下这个问题
-            returnJson.put("reply","露易丝不支持私聊注册哦，\n请在群聊里使用吧");
+            //判断如果是私聊禁止注册
+            JSONObject returnJson = new JSONObject();
+            //TODO)) go-cqhttp只能根据qq号和群号获取某个用户的信息 但是这会导致数据库中使用双主键 比较麻烦 后期解决一下这个问题
+            returnJson.put("reply", "露易丝不支持私聊注册哦，\n请在群聊里使用吧");
+            //快速返回
             return returnJson;
         }
         return userService.joinLouise(user_id, group_id);
     }
 
+
     /**
-     * 发送随机色图
-     * @param inMessage
+     * 内部实现的基于直方图信息的图片检索
+     *
+     * @param message JSONObject
      * @return JSONObject
      */
-    // TODO 基本废弃了，，，
-    @RequestMapping("louise/setu")
-    private JSONObject sendRandomSetu(@RequestBody InMessage inMessage) {
-
-        //获取请求元数据信息
-        String message_type = inMessage.getMessage_type();
-        long number;
-        String nickname = inMessage.getSender().getNickname();
-        //TODO 有待优化的变量
-        long user_id = inMessage.getUser_id();
-
-        //判断私聊或是群聊
-        String senderType = "";
-        if (message_type.equals("group")) {
-            number = inMessage.getGroup_id();
-            senderType = "group_id";
-
-        } else {
-            number = inMessage.getUser_id();
-            senderType = "user_id";
-        }
-
-        //调用LoliconAPI随机或根据参数请求色图
-        userService.updateCount(user_id,1);
-        return sendPictureApi.sendPicture(number, nickname, senderType, inMessage);
-    }
-
     @RequestMapping("louise/search")
     private JSONObject searchPicture(@RequestBody JSONObject message) {
-
         //返回值
         JSONObject returnJson = new JSONObject();
         //解析上传的信息 拿到图片URL还有一些相关参数
         String uri = message.getString("message");
-        uri = uri.substring(uri.indexOf("url=")+4, uri.length()-1);
+        uri = uri.substring(uri.indexOf("url=") + 4, uri.length() - 1);
         //获取请求元数据信息
 
-        URL url = null;
+        URL url;
         String filePath = LouiseConfig.LOUISE_CACHE_IMAGE_LOCATION + "/";
         String fileName = "Image_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")) + "_" + Tool.generateShortUuid() + "." + "jpg";
         String imageName = filePath + fileName;
         try {
             log.info("开始下载" + imageName + " 图片地址: " + uri);
-            url = new URL(uri);
+            url = URI.create(uri).toURL();
             DataInputStream dataInputStream = new DataInputStream(url.openStream());
             FileOutputStream fileOutputStream = new FileOutputStream(new File(imageName));
             ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -327,77 +231,40 @@ public class MyLouiseApi implements ErrorController {
     }
 
     /**
-     * 预处理Notice类型上报
-     * @param notice
+     * 查询用户信息
+     *
+     * @param message Message
      * @return JSONObject
      */
-    private JSONObject handleNoticePost(JSONObject notice) {
-
-        //获取Notice上报元数据
-        String notice_type = notice.getString("notice_type");
-        String user_id = notice.getString("user_id");
-        logger.info("提醒类上报的类型: " + notice_type);
-        //判断Notice的类型
-        switch (notice_type) {
-            default: return null;
-            case "group_upload": return initFileUploadInfo(notice, user_id);
-        }
-    }
-
-    /**
-     * 查询用户信息
-     * @param inMessage
-     * @return
-     */
     @RequestMapping("louise/myinfo")
-    public JSONObject myInfo(@RequestBody InMessage inMessage) {
+    public JSONObject myInfo(@RequestBody Message message) {
 
-        long user_id = inMessage.getUser_id();
-
+        long user_id = message.getUser_id();
         JSONObject returnJson = new JSONObject();
 
         User user = userService.selectById(user_id);
         Role role = roleService.selectById(user.getRole_id());
-        if (user == null) {
-            returnJson.put("reply", "没有你的信息诶");
-        } else {
-            Message message = Message.build(inMessage);
-            message.setGroup_id(-1L);
-            message.setMessage_type("privacy");
-            String nickname = user.getNickname();
-            Timestamp create_time = user.getCreate_time();
-            int count_setu = user.getCount_setu();
-            int count_upload = user.getCount_upload();
 
-            String myInfos = nickname + "，你的个人信息" +
-                    "\n总共请求功能次数：" + count_setu +
-                    "\n总共上传文件次数：" + count_upload +
-                    "\n在露易丝这里注册的时间；" + create_time +
-                    "\n-----------DIVIDER LINE------------" +
-                    "\n你的权限级别：<" + role.getRole_name() + ">" +
-                    "\n剩余CREDIT：" + user.getCredit() +
-                    "\nCREDIT BUFF：" + user.getCredit_buff();
-            message.text(myInfos).send();
-        }
-        returnJson.put("reply", "[CQ:at,qq=" + inMessage.getUser_id() + "]已私聊发送你的个人信息");
+        message.clear();
+        message.setGroup_id(-1L);
+        message.setMessage_type("privacy");
+        String nickname = user.getNickname();
+        Timestamp create_time = user.getCreate_time();
+        int count_setu = user.getCount_setu();
+        int count_upload = user.getCount_upload();
+
+        String myInfos = nickname + "，你的个人信息" +
+                "\n总共请求功能次数：" + count_setu +
+                "\n总共上传文件次数：" + count_upload +
+                "\n在露易丝这里注册的时间；" + create_time +
+                "\n-----------DIVIDER LINE------------" +
+                "\n你的权限级别：<" + role.getRole_name() + ">" +
+                "\n剩余CREDIT：" + user.getCredit() +
+                "\nCREDIT BUFF：" + user.getCredit_buff();
+        message.text(myInfos).send();
+
+        returnJson.put("reply", "[CQ:at,qq=" + user_id + "]已私聊发送你的个人信息");
         return returnJson;
 
-    }
-
-    /**
-     * 初次上传文件写入记录
-     * @param notice JSONObject
-     * @return JSONObject
-     */
-
-    private JSONObject initFileUploadInfo(JSONObject notice, String user_id) {
-
-        logger.info("进入初始化上传流程");
-        String nickname = user_id;
-
-        //构造快速操作返回信息
-        JSONObject reply = new JSONObject();
-        reply.put("reply", "你上传的文件已经记录下来了");
-        return reply;
     }
 }

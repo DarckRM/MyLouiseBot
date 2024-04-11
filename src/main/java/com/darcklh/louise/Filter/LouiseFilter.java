@@ -43,14 +43,14 @@ public class LouiseFilter implements Filter {
             }
 
             // 如果消息不以 ! 开头则排除，如果消息是 CQ 码形式也排除，交给 WS 处理
-            String prefix = jsonObject.getString("message");
+            String prefix = jsonObject.getString("raw_message");
             if (prefix.indexOf('!') != 0) return;
             if (prefix.indexOf('[') == 0) return;
 
             // 如果 URI 仅包含 louise 则是预处理请求
             String uri = request.getRequestURI();
             if (uri.equals("/louise")) {
-                String command = jsonObject.getString("message").split(" ")[0].substring(1);
+                String command = jsonObject.getString("raw_message").split(" ")[0].substring(1);
                 servletRequest.getRequestDispatcher("louise/" + command).forward(wrapper, servletResponse);
                 return;
             }

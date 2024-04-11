@@ -3,7 +3,6 @@ package com.darcklh.louise.Model;
 import com.alibaba.fastjson.JSONObject;
 import com.darcklh.louise.Config.LouiseConfig;
 import com.darcklh.louise.Model.Messages.Message;
-import com.darcklh.louise.Model.Messages.OutMessage;
 import com.darcklh.louise.Utils.OkHttpUtils;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -69,27 +68,6 @@ public class R {
         return JSONObject.parseObject(responseString);
     }
 
-    /**
-     * 使用 OutMessage 作为参数请求协议端接口
-     * @param api String
-     * @param out OutMessage
-     */
-    public void requestAPI(String api, OutMessage out) {
-        if (!isConnected())
-            return;
-        log.info("┌ 请求协议端接口: {}", api);
-        String responseString = OkHttpUtils.builder().url(LouiseConfig.BOT_BASE_URL + api)
-                .addBody(out.toJSONString())
-                .post(true)
-                .async();
-        // 校验请求结果
-        JSONObject resp = getResponse(responseString);
-        if (resp == null) {
-            return;
-        }
-        log.info("└ 接口 {} 返回消息: {}", api, resp);
-    }
-
     public JSONObject requestAPI(String api, Message message) {
         if (!isConnected())
             return null;
@@ -113,36 +91,9 @@ public class R {
         return resp;
     }
 
-    /**
-     * 根据参数向协议端发送消息
-     * @param outMessage OutMessage
-     */
-    public void sendMessage(OutMessage outMessage) {
-        if (!isConnected())
-            throw new InnerException(outMessage.getUser_id(), "无法连接 BOT， 请确认 Go-Cqhttp 正在运行", "");
-        if (outMessage.getMessages().size() != 0)
-            this.requestAPI("send_group_forward_msg", outMessage);
-        else this.requestAPI("send_msg", outMessage);
-    }
-
-    /**
-     * 返回结果后直接退出
-     * @param outMessage OutMessage
-     */
-    public void finish(OutMessage outMessage) {
-        if (!isConnected())
-            throw new InnerException(outMessage.getUser_id(), "无法连接 BOT， 请确认 Go-Cqhttp 正在运行", "");
-        if (outMessage.getMessages().size() != 0)
-            this.requestAPI("send_group_forward_msg", outMessage);
-        else this.requestAPI("send_msg", outMessage);
-        throw new InnerException(outMessage.getUser_id(), "主动退出", "");
-    }
-
     public JSONObject send(Message message) {
         if (!isConnected())
             throw new InnerException(message.getUser_id(), "无法连接 BOT， 请确认 Go-Cqhttp 正在运行", "");
-        if (!message.getNodes().isEmpty())
-            return this.requestAPI("send_msg", message);
         return this.requestAPI("send_msg", message);
     }
 
