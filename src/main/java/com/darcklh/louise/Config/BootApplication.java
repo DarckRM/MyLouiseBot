@@ -1,4 +1,4 @@
-package com.darcklh.louise.Utils;
+package com.darcklh.louise.Config;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
@@ -19,8 +19,12 @@ import com.darcklh.louise.Model.VO.FeatureInfoMin;
 import com.darcklh.louise.Service.CronTaskService;
 import com.darcklh.louise.Service.FeatureInfoService;
 import com.darcklh.louise.Service.RoleService;
+import com.darcklh.louise.Utils.DragonflyUtils;
+import com.darcklh.louise.Utils.LouiseThreadPool;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
@@ -30,7 +34,7 @@ import java.util.List;
 
 @Component
 @Slf4j
-public class BootApplication {
+public class BootApplication implements ApplicationListener<ContextRefreshedEvent> {
     @Autowired
     SysConfigDao sysConfigDao;
 
@@ -54,8 +58,9 @@ public class BootApplication {
 
     public static Date bootDate;
 
-    @PostConstruct
-    public void run() {
+    @Override
+    public void onApplicationEvent(ContextRefreshedEvent event) {
+
 
         // 获取系统启动时间
         bootDate = new Date();// 获取当前时间
@@ -137,5 +142,4 @@ public class BootApplication {
         }
 
     }
-
 }

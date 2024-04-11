@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,7 +41,7 @@ public class PluginManager {
     private URLClassLoader urlClassLoader;
 
     private void loadDefaultPlugins() {
-        log.info("加载内置插件");
+        log.info("<-- 加载内置插件 -->");
         String packagePath = "com/darcklh/louise/Plugin";
 
         URL url = getClass().getClassLoader().getResource(packagePath);
@@ -66,7 +67,11 @@ public class PluginManager {
             String className = file.getName().substring(0, file.getName().length() - 6);
             try {
                 Class<?> plugin = Class.forName(packagePath.replace("/", ".") + "." + className);
-                PluginService instance = (PluginService) plugin.getDeclaredConstructor().newInstance();
+                // 首先尝试从容器中获取，然后再采用反射实例化
+                PluginService instance = (PluginService) SpringContextUtils.getBean(StringUtils.uncapitalize(className));
+                if (instance == null) {
+                    instance = (PluginService) plugin.getDeclaredConstructor().newInstance();
+                }
 
                 if (!plugin.isAnnotationPresent(LouisePlugin.class))
                     continue;
@@ -120,6 +125,11 @@ public class PluginManager {
     private void loadingPlugin(PluginInfo pluginInfo) throws IllegalAccessException, InstantiationException {
         log.info("执行 [" + pluginInfo.getName() + "---" + pluginInfo.getAuthor() + "] 初始化函数 >>>");
         PluginService pluginService = getInstance(pluginInfo);
+
+        if (pluginService == null) {
+            log.error("结束 [" + pluginInfo.getName() + "---" + pluginInfo.getAuthor() + "] 初始化失败 <<<");
+            return;
+        }
 
         try {
             // 以生产环境为条件初始化插件

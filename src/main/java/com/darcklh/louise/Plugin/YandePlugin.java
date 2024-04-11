@@ -90,12 +90,6 @@ public class YandePlugin implements PluginService {
                 .send();
     }
 
-    @OnMessage(messages = {"yande/(day|week|month)"})
-    public void yandeType(Message message) {
-
-    }
-
-
     /**
      * 向数据库追加一条图站词条对照记录
      */
@@ -204,15 +198,14 @@ public class YandePlugin implements PluginService {
      * 获取 Yandere 每日图片
      */
     @OnMessage(messages = "yande/(day|week|month)")
-    public JSONObject yandePic(Message message) {
+    public void yandePic(Message message) {
         // TODO)) 考虑到 Yande 站的每日图片功能并不好做过滤，当群聊时转化成一般 Tag 请求
         if (message.getGroup_id() > 0) {
             message.setRaw_message("!yande *");
-//            requestBooru("https://yande.re/post.json?tags=", "Yande", message);
-            return null;
+            return;
         }
         String type = message.getRaw_message().replace("yande/", "");
-        return requestPopular("https://yande.re/post/popular_by_", "Yande", type, message);
+        requestPopular("https://yande.re/post/popular_by_", "Yande", type, message);
     }
 
     public JSONObject konachanSearch(InMessage inMessage) {
@@ -449,6 +442,7 @@ public class YandePlugin implements PluginService {
             // 使用代理请求 Yande
             String result = OkHttpUtils.builder().url(finalUri).
                     addParam("limit", Integer.toString(LIMIT)).
+                    get().
                     async();
             log.info("请求 " + target + ": " + finalUri + "?limit=" + LIMIT);
             JSONArray resultJsonArray = JSON.parseArray(result);

@@ -11,12 +11,11 @@ import com.darcklh.louise.Model.Annotation.OnMessage;
 import com.darcklh.louise.Model.Louise.BooruImages;
 import com.darcklh.louise.Model.Messages.Message;
 import com.darcklh.louise.Model.Saito.FeatureStatic;
+import com.darcklh.louise.Plugin.YandePlugin;
 import com.darcklh.louise.Service.PluginService;
-import com.darcklh.louise.Utils.DragonflyUtils;
-import com.darcklh.louise.Utils.EncryptUtils;
-import com.darcklh.louise.Utils.LouiseThreadPool;
-import com.darcklh.louise.Utils.OkHttpUtils;
+import com.darcklh.louise.Utils.*;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -38,6 +37,15 @@ class MyLouiseApplicationTests {
     @Autowired
     BooruImagesDao booruImagesDao;
 
+    @Autowired
+    YandePlugin yandePlugin;
+
+//    @Test
+    void testIOCPlugin() {
+        YandePlugin plugin = (YandePlugin) SpringContextUtils.getBean("yandePssslugin");
+        plugin.pluginName();
+        return;
+    }
 
     void testBooruImages() {
         QueryWrapper<BooruImages> query = new QueryWrapper<>();
