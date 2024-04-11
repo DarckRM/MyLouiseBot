@@ -32,7 +32,11 @@ public class SearchPictureApi{
         Message msg = new Message(inMessage);
 
         long userId = inMessage.getUser_id();
-        msg.at(userId).text("请在 15秒 内发送你要搜索的图片吧").send();
+        Message reply = Message.build();
+        reply.setUser_id(userId);
+        reply.setSender(msg.getSender());
+        reply.setMessage_type("private");
+        reply.text("请在 15秒 内发送你要搜索的图片吧").send();
         // 尝试从 WS 获取参数
         WsServer.getMessage((value) -> {
             if (value == null) {

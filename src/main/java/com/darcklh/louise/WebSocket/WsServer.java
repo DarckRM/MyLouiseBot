@@ -98,8 +98,8 @@ public class WsServer {
     // 处理响应式方法
     private void handleMessagePost(MessagePost post) {
         Message message = new Message(post);
-        if (listenerCounts != 0) {
-            if (accounts.contains(post.getUser_id())) {
+        if (ws.listenerCounts != 0) {
+            if (ws.accounts.contains(post.getUser_id())) {
                 addMessage(message);
                 return;
             }
