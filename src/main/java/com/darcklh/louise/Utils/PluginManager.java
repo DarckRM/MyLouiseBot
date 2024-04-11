@@ -43,28 +43,30 @@ public class PluginManager {
     private void loadDefaultPlugins() {
         log.info("<-- 加载内置插件 -->");
         String packagePath = "com/darcklh/louise/Plugin";
-
-        URL url = getClass().getClassLoader().getResource(packagePath);
-        if (url == null) {
-            log.warn("内置插件包不存在: {}", packagePath);
-            return;
-        }
-        File dir = new File(url.getFile());
-        if (!dir.exists() || !dir.isDirectory()) {
-            log.error("内置插件目录不存在");
-            return;
-        }
-        File[] files = dir.listFiles();
-        if (files == null) {
-            log.info("内置插件目录为空");
-            return;
-        }
+//
+//        URL url = getClass().getClassLoader().getResource(packagePath);
+//        if (url == null) {
+//            log.warn("内置插件包不存在: {}", packagePath);
+//            return;
+//        }
+//        File dir = new File(url.getFile());
+//        if (!dir.exists() || !dir.isDirectory()) {
+//            log.error("内置插件目录不存在");
+//            return;
+//        }
+//        File[] files = dir.listFiles();
+//        if (files == null) {
+//            log.info("内置插件目录为空");
+//            return;
+//        }
         int id = -1;
-        for (File file : files) {
-            if (!file.getName().endsWith(".class")) {
-                continue;
-            }
-            String className = file.getName().substring(0, file.getName().length() - 6);
+        String[] names = {"search", "yande"};
+//        for (File file : files) {
+        for (String className : names) {
+//            if (!file.getName().endsWith(".class")) {
+//                continue;
+//            }
+//            String className = file.getName().substring(0, file.getName().length() - 6);
             try {
                 Class<?> plugin = Class.forName(packagePath.replace("/", ".") + "." + className);
                 // 首先尝试从容器中获取，然后再采用反射实例化

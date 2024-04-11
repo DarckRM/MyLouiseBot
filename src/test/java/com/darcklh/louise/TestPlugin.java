@@ -21,10 +21,9 @@ public class TestPlugin implements PluginService {
     }
 
     @Override
-    public JSONObject service(InMessage inMessage) {
+    public JSONObject service(Message message) {
         return null;
     }
-
     @OnNotice(notices = {NoticePost.NoticeType.friend_recall, NoticePost.NoticeType.client_status})
     public JSONObject testNotice(NoticePost post) {
         return null;
