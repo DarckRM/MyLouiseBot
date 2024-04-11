@@ -218,7 +218,7 @@ public class PluginManager {
                 log.info(pluginName + "." + m.getName() + ":" + command + " 命令非法 已略过");
                 continue;
             }
-            pluginInfo.getCommandsMap().put(prefix + " " + command, m);
+            pluginInfo.getCommandsMap().put(prefix + command, m);
         }
     }
 

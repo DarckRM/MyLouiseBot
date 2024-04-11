@@ -26,7 +26,7 @@ public class SearchPictureApi{
      * @param inMessage
      * @return
      */
-    @RequestMapping("louise/find")
+//    @RequestMapping("louise/find")
     private JSONObject findPicture(@RequestBody InMessage inMessage) {
 
         Message msg = new Message(inMessage);
@@ -69,10 +69,6 @@ public class SearchPictureApi{
      */
     private void searchPictureCenter(InMessage inMessage, String url){
         // TODO 线程名过长
-        searchPictureService.findWithSourceNAO(inMessage, url);
-//        new Thread(() -> searchPictureService.findWithSourceNAO(inMessage, url), Tool.uniqueThreadName("", "NAO")).start();
-        // new Thread(() -> searchPictureService.findWithAscii2d(inMessage, url), Tool.uniqueThreadName("", "A2d")).start();
-
     }
 
 }

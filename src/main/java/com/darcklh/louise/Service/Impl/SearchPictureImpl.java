@@ -57,10 +57,9 @@ public class SearchPictureImpl implements SearchPictureService {
      * @return
      */
     @Override
-    public void findWithSourceNAO(InMessage inMessage, String url) {
+    public void findWithSourceNAO(Message message, String url) {
         // 构造返回体
-        Message message = new Message(inMessage);
-
+        message.clear();
         log.info("开始请求 sauceNAO 图片上传地址: " + url);
         String res = OkHttpUtils.builder().url(LouiseConfig.SOURCENAO_URL)
                 .addParam("url", url)

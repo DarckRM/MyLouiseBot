@@ -2,6 +2,7 @@ package com.darcklh.louise.Service;
 
 import com.alibaba.fastjson.JSONObject;
 import com.darcklh.louise.Model.Messages.InMessage;
+import com.darcklh.louise.Model.Messages.Message;
 import org.springframework.stereotype.Service;
 
 /**
@@ -11,6 +12,6 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public interface SearchPictureService {
-    public void findWithSourceNAO(InMessage inMessage, String url);
+    public void findWithSourceNAO(Message message, String url);
     public void findWithAscii2d(InMessage inMessage, String url);
 }

@@ -39,8 +39,4 @@ import static com.darcklh.louise.Model.GoCqhttp.AllPost.PostType.message;
 @RestController
 @Deprecated
 public class YandeApi {
-    @RequestMapping("louise/yande/*")
-    public void deprecate(@RequestBody Message message) {
-        message.clear().reply().text("!将被弃用，请直接使用 yande 即可").send();
-    }
 }

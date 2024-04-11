@@ -148,11 +148,11 @@ public class WsServer {
     private void spreadMessage(Message message) {
         // 向所有监听模式功能发送消息
         for (Map.Entry<Integer, PluginInfo> entry : PluginManager.pluginInfos.entrySet()) {
-            HashMap<String, Method> messageMap = entry.getValue().getMessagesMap();
-            if (messageMap.size() == 0)
+            HashMap<String, Method> allMap = generateMap(entry.getValue());
+            if (allMap.size() == 0)
                 continue;
 
-            for (Map.Entry<String, Method> keyMethod : messageMap.entrySet()) {
+            for (Map.Entry<String, Method> keyMethod : allMap.entrySet()) {
                 // TODO)) 以后使用消息段解析
                 if (!message.getRaw_message().matches(keyMethod.getKey()))
                     continue;
@@ -173,6 +173,20 @@ public class WsServer {
         }
     }
 
+    /**
+     * 用于将功能对象的所有指令汇总到一个 Map 中
+     * @return HashMap
+     */
+    private HashMap<String, Method> generateMap(PluginInfo plugin) {
+        HashMap<String, Method> allMap = new HashMap<>();
+
+        if (plugin.getCommandsMap().size() != 0)
+            allMap.putAll(plugin.getCommandsMap());
+        if (plugin.getMessagesMap().size() != 0)
+            allMap.putAll(plugin.getMessagesMap());
+
+        return allMap;
+    }
     private void startWatch(Long userId) {
         // 进入监听模式
         accounts.add(userId);

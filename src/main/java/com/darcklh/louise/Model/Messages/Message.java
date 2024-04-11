@@ -215,9 +215,9 @@ public class Message {
             long groupInfo = this.getGroup_id();
             String userInfo = this.getSender().getNickname() + "(" + this.getUser_id() + ")";
             if (groupInfo != -1)
-                log.info("发送到 群聊({}): {}", groupInfo, makeLogInfo(this.getNodes().size() == 0 ? this.getMessage().toString() : this.getNodes().toString()));
+                log.info("发送到 群聊 {}: {}", groupInfo, makeLogInfo(this.getNodes().size() == 0 ? this.getMessage().toString() : this.getNodes().toString()));
             else
-                log.info("发送到 私聊({}): {}", userInfo, makeLogInfo(this.getMessage().toString()));
+                log.info("发送到 私聊 {}: {}", userInfo, makeLogInfo(this.getMessage().toString()));
             nodesToMessage();
             r.send(this);
         }

@@ -6,6 +6,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.darcklh.louise.Api.FileControlApi;
 import com.darcklh.louise.Config.LouiseConfig;
 import com.darcklh.louise.Model.Annotation.LouisePlugin;
+import com.darcklh.louise.Model.Annotation.OnCommand;
 import com.darcklh.louise.Model.Annotation.OnMessage;
 import com.darcklh.louise.Model.Enum.DownloadType;
 import com.darcklh.louise.Model.Enum.Environment;
@@ -74,7 +75,7 @@ public class YandePlugin implements PluginService {
     public boolean reload() {
         return false;
     }
-    @OnMessage(messages = {"yande/help"})
+    @OnCommand(commands = {"yande/help"})
     public void yandeHelp(Message message) {
         message.clear().reply().text("所有符号请使用英文符号\n")
                 .text("用例: yande/day \n说明: 请求今日好图，day可为week,month\n\n")
@@ -86,7 +87,7 @@ public class YandePlugin implements PluginService {
     /**
      * 向数据库追加一条图站词条对照记录
      */
-    @OnMessage(messages = {"yande/add"})
+    @OnCommand(commands = {"yande/add"})
     public JSONObject addBooruTag(Message msg) {
 
         JSONObject reply = new JSONObject();
@@ -165,7 +166,7 @@ public class YandePlugin implements PluginService {
      * Konachan 同属 Booru 类型图站
      * 和 Yande 放在一起处理
      */
-    @OnMessage(messages = {"kona/tags .*"})
+    @OnMessage(messages = {"!kona/tags .*"})
     public JSONObject konachanTags(Message message) {
         // 处理命令前缀
         String[] msg;
@@ -177,7 +178,7 @@ public class YandePlugin implements PluginService {
     /**
      * 根据 Tag 返回可能的 Tags 列表
      */
-    @OnMessage(messages = {"yande/tags .*"})
+    @OnMessage(messages = {"!yande/tags .*"})
     public JSONObject yandeTags(Message message) {
         // 处理命令前缀
         String[] msg;
@@ -190,17 +191,16 @@ public class YandePlugin implements PluginService {
     /**
      * 获取 Yande.re 每日图片
      */
-    @OnMessage(messages = "yande/(day|week|month)")
-    public void yandePic(Message message) {
+    @OnMessage(messages = "!yande/(day|week|month)")
+    public JSONObject yandePic(Message message) {
         // TODO)) 考虑到 Yande 站的每日图片功能并不好做过滤，当群聊时转化成一般 Tag 请求
         if (message.getGroup_id() > 0) {
             message.setRaw_message("!yande *");
-            return;
         }
-        String type = message.getRaw_message().replace("yande/", "");
-        requestPopular("https://yande.re/post/popular_by_", "Yande", type, message);
+        String type = message.getRaw_message().replace("!yande/", "");
+        return requestPopular("https://yande.re/post/popular_by_", "Yande", type, message);
     }
-    @OnMessage(messages = "kona/(day/week/month)")
+    @OnMessage(messages = "!kona/(day/week/month)")
     public JSONObject konachanPic(Message message) {
         // TODO)) 考虑到 Yande 站的每日图片功能并不好做过滤，当群聊时转化成一般 Tag 请求
         if (message.getGroup_id() > 0) {
@@ -211,12 +211,12 @@ public class YandePlugin implements PluginService {
         String type = message.getRaw_message().replace("kona/", "");
         return requestPopular("https://konachan.com/post/popular_by_", "Konachan", type, message);
     }
-    @OnMessage(messages = "kona .*")
+    @OnCommand(commands = "kona .*")
     public JSONObject konachanSearch(Message message) {
         requestBooru("https://konachan.com/post.json?tags=", "Konachan", message);
         return null;
     }
-    @OnMessage(messages = "yande .*")
+    @OnCommand(commands = "yande .*")
     public JSONObject yandeSearch(Message message) {
         requestBooru("https://yande.re/post.json?tags=", "Yande", message);
         return null;
