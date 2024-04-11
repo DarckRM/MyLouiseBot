@@ -29,7 +29,7 @@ public class GroupImpl implements GroupService {
     GroupDao groupDao;
 
     private boolean isUpdate = true;
-    private final String groupKey = "model:group:id:";
+    private final String groupKey = "MODEL:GROUP:ID:";
 
     public boolean isUpdate() {
         return this.isUpdate;

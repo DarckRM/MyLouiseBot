@@ -83,17 +83,17 @@ public class BootApplication implements ApplicationListener<ContextRefreshedEven
         log.info("<--加载 MyLouise 插件-->");
         Result<PluginInfo> result = pluginInfoController.loadPlugins();
 
-        // 加载定时任务
-        log.info("<--加载 MyLouise 定时任务-->");
-        QueryWrapper<CronTask> wrapper = new QueryWrapper<>();
-        wrapper.ne("is_enabled", 0);
-        List<CronTask> cronTasks = cronTaskDao.selectList(wrapper);
-        if (cronTasks.size() > 0) {
-            for (CronTask cronTask : cronTasks) {
-                cronTaskService.add(cronTask);
-                log.info("加载定时任务 <-- " + cronTask.getTask_name() + "---" + cronTask.getInfo() + " -->");
-            }
-        }
+//        // 加载定时任务
+//        log.info("<--加载 MyLouise 定时任务-->");
+//        QueryWrapper<CronTask> wrapper = new QueryWrapper<>();
+//        wrapper.ne("is_enabled", 0);
+//        List<CronTask> cronTasks = cronTaskDao.selectList(wrapper);
+//        if (cronTasks.size() > 0) {
+//            for (CronTask cronTask : cronTasks) {
+//                cronTaskService.add(cronTask);
+//                log.info("加载定时任务 <-- " + cronTask.getTask_name() + "---" + cronTask.getInfo() + " -->");
+//            }
+//        }
 
         //将配置写入 DragonFly 缓存
         log.info("<--加载 MyLouise 功能信息-->");
@@ -135,7 +135,7 @@ public class BootApplication implements ApplicationListener<ContextRefreshedEven
             msg.setMessage_type("private");
             msg.text("启动时间 " + bootDate + " Louise 系统已启动\n")
                     .text(result.getMsg())
-                    .text("\n成功加载了 " + cronTasks.size() + " 个计划任务")
+//                    .text("\n成功加载了 " + cronTasks.size() + " 个计划任务")
                     .send();
         } catch (Exception e) {
             log.info("未能建立与协议端的连接 - Louise 系统已启动");

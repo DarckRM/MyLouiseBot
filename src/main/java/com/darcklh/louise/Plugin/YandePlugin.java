@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.client.RestTemplate;
@@ -79,7 +80,7 @@ public class YandePlugin implements PluginService {
     public void yandeHelp(Message message) {
         message.clear().reply().text("所有符号请使用英文符号\n")
                 .text("用例: yande/day \n说明: 请求今日好图，day可为week,month\n\n")
-                .text("用例: yande 初音未来 \n说明: 初音未来相关图片，可用空格分隔最大4个标签\n\n")
+                .text("用例: yande 初音未来 水手服 \n说明: 初音未来相关图片，可用空格分隔最大4个标签\n\n")
                 .text("用例: yande hatsune_miku 2 10 \n说明: 初音未来相关图片第2页的10张，只有一个参数就只算页数\n\n")
                 .text("用例: yande/tags miku \n说明: 查询和miku有关的标签，翻页方法和上面一致\n\n")
                 .send();
@@ -196,6 +197,8 @@ public class YandePlugin implements PluginService {
         // TODO)) 考虑到 Yande 站的每日图片功能并不好做过滤，当群聊时转化成一般 Tag 请求
         if (message.getGroup_id() > 0) {
             message.setRaw_message("!yande *");
+            requestBooru("https://yande.re/post.json?tags=", "Yande", message);
+            return null;
         }
         String type = message.getRaw_message().replace("!yande/", "");
         return requestPopular("https://yande.re/post/popular_by_", "Yande", type, message);
@@ -388,7 +391,8 @@ public class YandePlugin implements PluginService {
         String[] finalTags = tags;
         String[] final_tags_info = tags_info;
         // 尝试从缓存获取
-        ArrayList<String> dragon = dragonflyUtils.get(target + " " + Arrays.toString(tags) + pageNation[0] + "页/" + pageNation[1] + "条", ArrayList.class);
+        String fileKey = target.toUpperCase() + ":FILE:" + pageNation[0] + "-" + pageNation[1] + "-" + Arrays.toString(tags);
+        ArrayList<String> dragon = dragonflyUtils.get(fileKey, ArrayList.class);
         if (dragon != null) {
             log.info("已找到 Dragonfly 缓存");
             String page_nation = pageNation[0] + "页/" + pageNation[1] + "条";
@@ -431,9 +435,8 @@ public class YandePlugin implements PluginService {
 
         // 校验参数合法性
         if (!type.equals("day") && !type.equals("week") && !type.equals("month")) {
-            JSONObject sendJson = new JSONObject();
-            sendJson.put("reply", target + " 功能仅支持参数 day | week | month，请这样 !" + target.toLowerCase() + "/[参数] 请求哦");
-            return sendJson;
+            message.clear().text(target + " 功能仅支持参数 day | week | month，请这样 !" + target.toLowerCase() + "/[参数] 请求哦").send();
+            return null;
         }
         uri += type + ".json";
 

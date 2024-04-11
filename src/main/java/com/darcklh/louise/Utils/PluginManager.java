@@ -91,8 +91,8 @@ public class PluginManager {
                 pluginInfo.setPluginService(instance);
                 // 外置插件对象的 Id 都是正数
                 pluginInfos.put(id, pluginInfo);
+                log.info("加载内置插件成功: {} 内置 ID {}", pluginInfo.getName(), id);
                 id--;
-                log.info("加载内置插件成功: {}", pluginInfo.getName());
 
             } catch (Exception e) {
                 log.error("内置插件加载异常: ", e);
