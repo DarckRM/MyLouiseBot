@@ -41,6 +41,29 @@ class MyLouiseApplicationTests {
     YandePlugin yandePlugin;
 
 //    @Test
+    void testYandePlugin() {
+        long[] targets = {392405198};
+        Message message = new Message();
+        for (long group : targets) {
+            try {
+                message.setGroup_id(group);
+                message.setMessage_type("group");
+                message.setPost_type("message");
+                yandePlugin.yandePic(message);
+            } catch (Exception e) {
+            }
+        }
+
+        while (true) {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+//    @Test
     void testIOCPlugin() {
         YandePlugin plugin = (YandePlugin) SpringContextUtils.getBean("yandePssslugin");
         plugin.pluginName();

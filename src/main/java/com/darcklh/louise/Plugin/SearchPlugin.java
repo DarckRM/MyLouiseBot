@@ -2,6 +2,7 @@ package com.darcklh.louise.Plugin;
 
 import com.alibaba.fastjson.JSONObject;
 import com.darcklh.louise.Model.Annotation.LouisePlugin;
+import com.darcklh.louise.Model.Annotation.OnCommand;
 import com.darcklh.louise.Model.Annotation.OnMessage;
 import com.darcklh.louise.Model.Enum.Environment;
 import com.darcklh.louise.Model.Messages.InMessage;
@@ -46,7 +47,7 @@ public class SearchPlugin implements PluginService {
      * 根据图片以及参数调用识图接口
      * @param message Message
      */
-    @OnMessage(messages = "find")
+    @OnCommand(commands = "find")
     public JSONObject findPicture(Message message) {
         long userId = message.getUser_id();
         Message reply = Message.build();

@@ -60,7 +60,7 @@ public class PluginManager {
 //            return;
 //        }
         int id = -1;
-        String[] names = {"search", "yande"};
+        String[] names = {"SearchPlugin", "YandePlugin"};
 //        for (File file : files) {
         for (String className : names) {
 //            if (!file.getName().endsWith(".class")) {

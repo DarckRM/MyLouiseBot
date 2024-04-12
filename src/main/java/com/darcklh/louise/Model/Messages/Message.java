@@ -1,6 +1,7 @@
 package com.darcklh.louise.Model.Messages;
 
 import com.alibaba.fastjson.JSONObject;
+import com.darcklh.louise.Config.LouiseConfig;
 import com.darcklh.louise.Model.GoCqhttp.MessagePost;
 import com.darcklh.louise.Model.R;
 import com.darcklh.louise.Model.Sender;
@@ -274,6 +275,23 @@ public class Message {
         R r = new R();
         r.finish(this, text);
         this.clear();
+    }
+
+    /**
+     * 如果 Sender 不存在的话返回一个默认 Sender
+     * @return Sender
+     */
+    public Sender getSender() {
+        Sender sender = this.sender;
+        if (sender == null) {
+            sender = new Sender();
+            sender.setNickname("Louise");
+            sender.setAge(16);
+            sender.setSex("female");
+            sender.setUser_id(Long.valueOf(LouiseConfig.BOT_ACCOUNT));
+            this.sender = sender;
+        }
+        return sender;
     }
 
     public interface MessageCallBack {
