@@ -3,6 +3,7 @@ package com.darcklh.louise;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.darcklh.louise.Config.LouiseConfig;
+import com.darcklh.louise.CronTask.DailyImage;
 import com.darcklh.louise.Mapper.BooruImagesDao;
 import com.darcklh.louise.Mapper.FeatureStaticDao;
 import com.darcklh.louise.Model.Annotation.LouisePlugin;
@@ -32,28 +33,12 @@ class MyLouiseApplicationTests {
     private final HashMap<String, Method> messageMap = new HashMap<>();
 
     @Autowired
-    FeatureStaticDao featureStaticDao;
-
-    @Autowired
-    BooruImagesDao booruImagesDao;
-
-    @Autowired
-    YandePlugin yandePlugin;
+    DailyImage dailyImage;
 
 //    @Test
     void testYandePlugin() {
-        long[] targets = {392405198};
-        Message message = new Message();
-        for (long group : targets) {
-            try {
-                message.setGroup_id(group);
-                message.setMessage_type("group");
-                message.setPost_type("message");
-                yandePlugin.yandePic(message);
-            } catch (Exception e) {
-            }
-        }
 
+        dailyImage.run();
         while (true) {
             try {
                 Thread.sleep(1000);
@@ -72,8 +57,8 @@ class MyLouiseApplicationTests {
 
     void testBooruImages() {
         QueryWrapper<BooruImages> query = new QueryWrapper<>();
-        List<BooruImages> result = booruImagesDao.selectList(query);
-        System.out.println(result);
+//        List<BooruImages> result = booruImagesDao.selectList(query);
+//        System.out.println(result);
     }
 
 
@@ -114,7 +99,7 @@ class MyLouiseApplicationTests {
         };
         for (JSONObject one : du.list("aka", h)) {
             System.out.println(one.toString());
-            featureStaticDao.insert(min);
+//            featureStaticDao.insert(min);
         }
     }
 

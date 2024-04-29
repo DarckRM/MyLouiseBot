@@ -17,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -40,6 +41,7 @@ public class FileControlApi {
 
     /**
      * 上传插件
+     *
      * @param file
      * @return
      * @throws IOException
@@ -53,7 +55,7 @@ public class FileControlApi {
         if (!file.isEmpty()) {
 
             String fileName = file.getOriginalFilename(); //获取上传的文件名
-            String suffixName = fileName.substring(fileName.lastIndexOf("." )+ 1); //获取后缀名
+            String suffixName = fileName.substring(fileName.lastIndexOf(".") + 1); //获取后缀名
             result.setData(fileName);
             if (!suffixName.equals("jar")) {
                 result.setMsg("上传失败\n不支持的文件类型 " + suffixName);
@@ -68,7 +70,7 @@ public class FileControlApi {
                 log.info("系统已存在插件 " + fileName);
                 pluginInfoService.unloadPlugin("plugins/" + fileName);
                 log.info("已完成插件 " + fileName + " 的卸载");
-                if(dest.delete())
+                if (dest.delete())
                     log.info("已删除旧版本的插件");
             }
 
@@ -95,6 +97,7 @@ public class FileControlApi {
 
     /**
      * 上传图片
+     *
      * @param file
      * @return
      */
@@ -107,7 +110,7 @@ public class FileControlApi {
         if (!file.isEmpty()) {
 
             String fileName = file.getOriginalFilename(); //获取上传的文件名
-            String suffixName = fileName.substring(fileName.lastIndexOf("." )+ 1); //获取后缀名
+            String suffixName = fileName.substring(fileName.lastIndexOf(".") + 1); //获取后缀名
             fileName = "Image_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")) + "_" + Tool.generateShortUuid() + "." + suffixName;
             result.setData(fileName);
             File dest = new File(new File(LouiseConfig.LOUISE_CACHE_IMAGE_LOCATION).getAbsolutePath() + "/" + fileName);
@@ -134,50 +137,52 @@ public class FileControlApi {
 
     /**
      * images图片下载
+     *
      * @param request
      * @param response
      * @return
      */
     @GetMapping("/saito/image/**")
     @ResponseBody
-    public JSONObject downloadImage(HttpServletRequest request, HttpServletResponse response){
+    public JSONObject downloadImage(HttpServletRequest request, HttpServletResponse response) {
         String url = request.getRequestURI();
         JSONObject jsonObject = new JSONObject();
-        String fileName = url.replace("/saito/image/","");
+        String fileName = url.replace("/saito/image/", "");
 
         File file = new File(LouiseConfig.LOUISE_CACHE_LOCATION + "/images/" + fileName);
-        if(!file.exists()){
-            jsonObject.put("success",2);
-            jsonObject.put("result","下载文件不存在");
+        if (!file.exists()) {
+            jsonObject.put("success", 2);
+            jsonObject.put("result", "下载文件不存在");
             return jsonObject;
         }
         response.reset();
         response.setContentType("application/json");
         response.setCharacterEncoding("utf-8");
         response.setContentLength((int) file.length());
-        response.setHeader("Content-Disposition", "attachment;filename=" + fileName );
-        try(BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file));) {
+        response.setHeader("Content-Disposition", "attachment;filename=" + fileName);
+        try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file));) {
             byte[] buff = new byte[1024];
-            OutputStream os  = response.getOutputStream();
+            OutputStream os = response.getOutputStream();
             int i = 0;
             while ((i = bis.read(buff)) != -1) {
                 os.write(buff, 0, i);
                 os.flush();
             }
         } catch (IOException e) {
-            jsonObject.put("success",2);
-            jsonObject.put("result","下载文件不存在");
+            jsonObject.put("success", 2);
+            jsonObject.put("result", "下载文件不存在");
             return jsonObject;
         }
-        jsonObject.put("success",0);
-        jsonObject.put("result","下载文件成功");
+        jsonObject.put("success", 0);
+        jsonObject.put("result", "下载文件成功");
         return jsonObject;
     }
 
     /**
      * 用 RestTemplate 添加代理进行请求
-     * @param urlList String
-     * @param fileName String
+     *
+     * @param urlList    String
+     * @param fileName   String
      * @param fileOrigin String
      * @return boolean
      */
@@ -200,15 +205,22 @@ public class FileControlApi {
         if (LouiseConfig.LOUISE_PROXY_PORT > 0)
             restTemplate.setRequestFactory(new HttpProxy().getFactory("下载图片"));
 
-        restTemplate.execute(urlList, HttpMethod.GET, requestCallback, clientHttpResponse -> {
-            Files.copy(clientHttpResponse.getBody(), Paths.get(filePath));
-            return null;
-        });
+        try {
+            restTemplate.execute(urlList, HttpMethod.GET, requestCallback, clientHttpResponse -> {
+                Files.copy(clientHttpResponse.getBody(), Paths.get(filePath));
+                return true;
+            });
+        } catch (Exception e) {
+            log.error("下载资源异常: {}", e.getLocalizedMessage());
+            return false;
+        }
+
         return true;
     }
 
     /**
      * 根据传入的URL下载图片到本地
+     *
      * @param urlList String
      */
     public boolean downloadPictureURL_Single(String urlList, String fileName, String fileOrigin) {
@@ -264,6 +276,7 @@ public class FileControlApi {
 
     /**
      * 根据文件路径判定文件是否存在
+     *
      * @param filePath String
      * @return boolean
      */

@@ -83,7 +83,7 @@ public class BootApplication implements ApplicationListener<ContextRefreshedEven
         log.info("<--加载 MyLouise 插件-->");
         Result<PluginInfo> result = pluginInfoController.loadPlugins();
 
-//        // 加载定时任务
+        // 加载定时任务
 //        log.info("<--加载 MyLouise 定时任务-->");
 //        QueryWrapper<CronTask> wrapper = new QueryWrapper<>();
 //        wrapper.ne("is_enabled", 0);

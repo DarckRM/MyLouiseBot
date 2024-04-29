@@ -60,22 +60,27 @@ public class YandePlugin implements PluginService {
     public String pluginName() {
         return "yande";
     }
+
     @Override
     public JSONObject service(Message message) {
         return null;
     }
+
     @Override
     public JSONObject service() {
         return null;
     }
+
     @Override
     public boolean init(Environment env) {
         return false;
     }
+
     @Override
     public boolean reload() {
         return false;
     }
+
     @OnCommand(commands = {"yande/help"})
     public void yandeHelp(Message message) {
         message.clear().reply().text("所有符号请使用英文符号\n")
@@ -85,6 +90,7 @@ public class YandePlugin implements PluginService {
                 .text("用例: yande/tags miku \n说明: 查询和miku有关的标签，翻页方法和上面一致\n\n")
                 .send();
     }
+
     /**
      * 向数据库追加一条图站词条对照记录
      */
@@ -163,6 +169,7 @@ public class YandePlugin implements PluginService {
             return reply;
         }
     }
+
     /**
      * Konachan 同属 Booru 类型图站
      * 和 Yande 放在一起处理
@@ -176,6 +183,7 @@ public class YandePlugin implements PluginService {
             throw new ReplyException("参数错误，请按如下格式尝试 !kona/tags [参数]");
         return requestTags(msg, "https://konachan.com/tag.json?name=", message);
     }
+
     /**
      * 根据 Tag 返回可能的 Tags 列表
      */
@@ -203,6 +211,7 @@ public class YandePlugin implements PluginService {
         String type = message.getRaw_message().replace("!yande/", "");
         return requestPopular("https://yande.re/post/popular_by_", "Yande", type, message);
     }
+
     @OnMessage(messages = "!kona/(day/week/month)")
     public JSONObject konachanPic(Message message) {
         // TODO)) 考虑到 Yande 站的每日图片功能并不好做过滤，当群聊时转化成一般 Tag 请求
@@ -214,11 +223,13 @@ public class YandePlugin implements PluginService {
         String type = message.getRaw_message().replace("kona/", "");
         return requestPopular("https://konachan.com/post/popular_by_", "Konachan", type, message);
     }
+
     @OnCommand(commands = "kona .*")
     public JSONObject konachanSearch(Message message) {
         requestBooru("https://konachan.com/post.json?tags=", "Konachan", message);
         return null;
     }
+
     @OnCommand(commands = "yande .*")
     public JSONObject yandeSearch(Message message) {
         requestBooru("https://yande.re/post.json?tags=", "Yande", message);
@@ -226,7 +237,7 @@ public class YandePlugin implements PluginService {
     }
 
     /**
-     * @param message       cqhttp send in message
+     * @param message         cqhttp send in message
      * @param resultJsonArray result as array
      * @param limit           如果是精选图集则只展示 15 张
      */
@@ -254,7 +265,7 @@ public class YandePlugin implements PluginService {
 
     private void sendInfo(Message message, String tagsInfo, String pageNation) {
         String announce = "支持中文搜索，请使用角色正确中文名\n如果想追加中文词条请使用!yande/help查看说明\n";
-        message.node(Node.build().text(announce).text("你的请求结果出来了，你的参数是: " + tagsInfo + "\n分页: " + pageNation), 0);
+        message.node(Node.build().text(announce).text("数据准备中，参数是: " + tagsInfo + "\n分页: " + pageNation), 0);
         if (message.getGroup_id() >= 0)
             message.node(Node.build().text("已过滤过于离谱的图片，如需全部资料请私聊 (`ヮ´)"));
         message.send();
@@ -428,7 +439,6 @@ public class YandePlugin implements PluginService {
                 e.printStackTrace();
             }
         });
-        return;
     }
 
     private JSONObject requestPopular(String uri, String target, String type, Message message) {
@@ -602,9 +612,6 @@ public class YandePlugin implements PluginService {
             booruApi = "sample/" + booruApi;
         }
         for (String[] image : imageList) {
-//            String filePath = LouiseConfig.LOUISE_CACHE_IMAGE_LOCATION + booruApi + "/" + image[0];
-//            if (fileControlApi.checkFileExist(filePath))
-//                continue;
             taskList.add(new DownloadPicTask(0, image[2], image[0], booruApi, fileControlApi));
         }
         if (taskList.size() == 0)
@@ -619,10 +626,8 @@ public class YandePlugin implements PluginService {
 
     private boolean handleDownloadTask(ArrayList<DownloadPicTask> taskList, Message message) throws InterruptedException {
         List<MultiTaskService>[] taskListPerThread = TaskDistributor.distributeTasks(taskList, 4);
-        List<WorkThread> workThreads = new ArrayList<>();
         for (int j = 0; j < taskListPerThread.length; j++) {
             WorkThread workThread = new WorkThread(taskListPerThread[j], j);
-            workThreads.add(workThread);
             LouiseThreadPool.execute(() -> {
                 workThread.run((tasks) -> {
                     ArrayList<String> imageList = new ArrayList<>();
@@ -674,4 +679,63 @@ public class YandePlugin implements PluginService {
         }
         return booruImagesService.saveOrUpdateBatch(images);
     }
+
+    private String parseParams(Message message) {
+        return "";
+    }
+
+    /**
+     * 暂时提供一个每日任务的接口，处理线程安全问题
+     *
+     * @param groups long[]
+     */
+    public void dailyImage(long[] groups) {
+        Message admin = new Message();
+        admin.setUser_id(412543224L);
+        admin.setMessage_type("private");
+        String booruApi = "Yande";
+        String fileKey = "Yande".toUpperCase() + ":FILE:1-10-daily";
+
+        // 使用代理请求 Yande
+        String result = OkHttpUtils.builder().url("https://yande.re/post.json?tags=*+rating:safe+score:>15+&limit=10&page=1").get().async();
+        JSONArray resultJsonArray = JSON.parseArray(result);
+
+        assert resultJsonArray != null;
+        if (resultJsonArray.isEmpty()) {
+            return;
+        }
+
+        ArrayList<String> fileNameList = makeImageNameList(resultJsonArray, 10, true);
+        ArrayList<String> filePathList = makeImagePathList(fileNameList, booruApi + "/");
+        ArrayList<String> fileUrlList = makeImageUrlList(resultJsonArray, "file_url");
+
+        ArrayList<String[]> uniformArrayList = makeUniformImageList(fileNameList, filePathList, fileUrlList, fileNameList.size());
+
+        ArrayList<DownloadPicTask> taskList = new ArrayList<>();
+        for (String[] image : uniformArrayList)
+            taskList.add(new DownloadPicTask(0, image[2], image[0], booruApi, fileControlApi));
+
+        List<MultiTaskService>[] taskListPerThread = TaskDistributor.distributeTasks(taskList, 4);
+        WorkThread work = new WorkThread(taskListPerThread);
+
+        work.run_sync((taskArray -> {
+            dragonflyUtils.setEx(fileKey, filePathList, 3600);
+        }));
+
+        for (long group : groups) {
+            Message message = new Message();
+            message.setGroup_id(group);
+            message.setUser_id(Long.valueOf(LouiseConfig.BOT_ACCOUNT));
+            message.setMessage_type("group");
+
+            String page_nation = "1页/10条";
+            instantSend(message, filePathList, "daily", page_nation);
+            try {
+                Thread.sleep(3000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
 }

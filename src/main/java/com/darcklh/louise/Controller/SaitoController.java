@@ -66,7 +66,7 @@ public class SaitoController {
         lengthMap.put(client_name, 1);//默认从第一行开始
         //获取日志信息
         LouiseThreadPool.execute(() -> {
-            log.info("日志输出任务开始");
+            log.debug("日志输出任务开始");
             //日志文件路径，获取最新的
             String filePath = "logs/mylouise.log";
             while(output_log) {
