@@ -67,7 +67,7 @@ public class InvokeValidator {
                 long interval = now - lastReq;
                 long reqLimit = feature.getInvoke_limit() * 1000L;
                 if (interval < reqLimit) {
-                    message.reply().at().text("此功能还有 " + (reqLimit - interval) / 1000 + " 秒冷却").send();
+                    message.reply().text("此功能还有 " + (reqLimit - interval) / 1000 + " 秒冷却").send();
                     return false;
                 } else
                     reqLogs.put(featureId, now);

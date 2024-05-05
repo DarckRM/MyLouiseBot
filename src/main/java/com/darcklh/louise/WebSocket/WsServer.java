@@ -16,6 +16,7 @@ import com.darcklh.louise.Service.FeatureInfoService;
 import com.darcklh.louise.Utils.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
@@ -76,7 +77,7 @@ public class WsServer {
 
     @OnError
     public void onError(Session session, Throwable error) {
-        log.error("go-cqhttp 错误 ,原因:" + error.getMessage());
+        log.error("go-cqhttp 错误 ,原因:{}", error.getMessage());
         error.printStackTrace();
     }
 
@@ -96,6 +97,7 @@ public class WsServer {
     }
 
     // 处理响应式方法
+    @Async
     private void handleMessagePost(MessagePost post) {
         Message message = new Message(post);
         if (ws.listenerCounts != 0) {
@@ -111,6 +113,7 @@ public class WsServer {
 
     }
 
+    @Async
     private void handleRequestPost(RequestPost post) {
         // 判断 request_type
         JSONObject jsonObject = new JSONObject();
@@ -149,7 +152,7 @@ public class WsServer {
         // 向所有监听模式功能发送消息
         for (Map.Entry<Integer, PluginInfo> entry : PluginManager.pluginInfos.entrySet()) {
             HashMap<String, Method> allMap = generateMap(entry.getValue());
-            if (allMap.size() == 0)
+            if (allMap.isEmpty())
                 continue;
 
             for (Map.Entry<String, Method> keyMethod : allMap.entrySet()) {
@@ -175,18 +178,20 @@ public class WsServer {
 
     /**
      * 用于将功能对象的所有指令汇总到一个 Map 中
+     *
      * @return HashMap
      */
     private HashMap<String, Method> generateMap(PluginInfo plugin) {
         HashMap<String, Method> allMap = new HashMap<>();
 
-        if (plugin.getCommandsMap().size() != 0)
+        if (!plugin.getCommandsMap().isEmpty())
             allMap.putAll(plugin.getCommandsMap());
-        if (plugin.getMessagesMap().size() != 0)
+        if (!plugin.getMessagesMap().isEmpty())
             allMap.putAll(plugin.getMessagesMap());
 
         return allMap;
     }
+
     private void startWatch(Long userId) {
         // 进入监听模式
         accounts.add(userId);
@@ -203,8 +208,8 @@ public class WsServer {
     /**
      * 指定超时时间和用户ID尝试获取用户发送的消息
      *
-     * @param callBack GoCallBack
-     * @param userId Long
+     * @param callBack   GoCallBack
+     * @param userId     Long
      * @param exceedTime Long
      * @return Message
      */
@@ -218,7 +223,7 @@ public class WsServer {
         int interval = 0;
         Message message;
         try {
-            log.info("正在监听来自 " + Arrays.toString(accounts.toArray()) + " 的消息");
+            log.info("正在监听来自 {} 的消息", Arrays.toString(accounts.toArray()));
             while (interval < exceedTime) {
                 message = messageMap.get(userId);
                 if (message != null) {
@@ -234,6 +239,8 @@ public class WsServer {
             callBack.call(null);
         } catch (InterruptedException e) {
             log.error(e.getLocalizedMessage());
+        } finally {
+            notifyAll();
         }
         return null;
     }

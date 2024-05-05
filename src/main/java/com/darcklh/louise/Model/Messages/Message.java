@@ -104,6 +104,8 @@ public class Message {
     }
 
     public Message at(Long user_id) {
+        if (this.getGroup_id() <= 0)
+            return this;
         JSONObject obj = new JSONObject();
         obj.put("type", "at");
         JSONObject data = new JSONObject();
@@ -114,6 +116,8 @@ public class Message {
     }
 
     public Message at() {
+        if (this.getGroup_id() <= 0)
+            return this;
         JSONObject obj = new JSONObject();
         obj.put("type", "at");
         JSONObject data = new JSONObject();
