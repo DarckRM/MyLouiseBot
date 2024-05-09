@@ -18,7 +18,7 @@ public class DailyImage {
 //    private final long[] targets = {792873704, 798823950, 377418622, 947082838, 675699747, 701837853, 726751510};
     private final long[] targets = {392405198};
 
-    @Scheduled(cron = "0 10 11,18 * * ?")
+//    @Scheduled(cron = "0 10 11,18 * * ?")
 //    @Scheduled(cron = "10,20,30 * * * * ?")
     public void run() {
         log.info("定时任务 {} 执行", name);
