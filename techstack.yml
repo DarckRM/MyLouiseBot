@@ -1,0 +1,274 @@
+repo_name: DarckRM/MyLouiseBot
+report_id: 6e38b29bc81f1c970b11d5e5319fc284
+version: 0.1
+repo_type: Public
+timestamp: '2024-07-17T08:12:14+00:00'
+requested_by: DarckRM
+provider: github
+branch: main
+detected_tools_count: 21
+tools:
+- name: Java
+  description: A concurrent, class-based, object-oriented, language specifically designed
+    to have as few implementation dependencies as possible
+  website_url: https://www.java.com
+  open_source: true
+  hosted_saas: false
+  category: Languages & Frameworks
+  sub_category: Languages
+  image_url: https://img.stackshare.io/service/995/K85ZWV2F.png
+  detection_source_url: https://github.com/DarckRM/MyLouiseBot
+  detection_source: Repo Metadata
+- name: Spring Framework
+  description: An application framework and inversion of control container for the
+    Java platform
+  website_url: https://spring.io/projects/spring-framework
+  license: Apache-2.0
+  open_source: true
+  hosted_saas: false
+  category: Languages & Frameworks
+  sub_category: Frameworks (Full Stack)
+  image_url: https://img.stackshare.io/service/2006/spring-framework-project-logo.png
+  detection_source_url: https://github.com/DarckRM/MyLouiseBot/blob/main/pom.xml
+  detection_source: pom.xml
+  last_updated_by: DarckRM
+  last_updated_on: 2023-04-18 16:14:58.000000000 Z
+- name: MySQL
+  description: The world's most popular open source database
+  website_url: http://www.mysql.com
+  open_source: true
+  hosted_saas: false
+  category: Data Stores
+  sub_category: Databases
+  image_url: https://img.stackshare.io/service/1025/logo-mysql-170x170.png
+  detection_source_url: https://github.com/DarckRM/MyLouiseBot/blob/main/pom.xml
+  detection_source: pom.xml
+  last_updated_by: DarckRM
+  last_updated_on: 2023-04-18 16:14:58.000000000 Z
+- name: Redis
+  description: Open source (BSD licensed), in-memory data structure store
+  website_url: http://redis.io/
+  license: BSD-3-Clause
+  open_source: true
+  hosted_saas: false
+  category: Data Stores
+  sub_category: In-Memory Databases
+  image_url: https://img.stackshare.io/service/1031/default_cbce472cd134adc6688572f999e9122b9657d4ba.png
+  detection_source_url: https://github.com/DarckRM/MyLouiseBot/blob/main/pom.xml
+  detection_source: pom.xml
+  last_updated_by: DarckRM
+  last_updated_on: 2023-04-18 16:14:58.000000000 Z
+- name: Docker
+  description: Enterprise Container Platform for High-Velocity Innovation.
+  website_url: https://www.docker.com/
+  license: Apache-2.0
+  open_source: true
+  hosted_saas: false
+  category: Build, Test, Deploy
+  sub_category: Virtual Machine Platforms & Containers
+  image_url: https://img.stackshare.io/service/586/n4u37v9t_400x400.png
+  detection_source_url: https://github.com/DarckRM/MyLouiseBot
+  detection_source: Repo Metadata
+- name: Git
+  description: Fast, scalable, distributed revision control system
+  website_url: http://git-scm.com/
+  open_source: true
+  hosted_saas: false
+  category: Build, Test, Deploy
+  sub_category: Version Control System
+  image_url: https://img.stackshare.io/service/1046/git.png
+  detection_source_url: https://github.com/DarckRM/MyLouiseBot
+  detection_source: Repo Metadata
+- name: GitHub Actions
+  description: Automate your workflow from idea to production
+  website_url: https://github.com/features/actions
+  open_source: false
+  hosted_saas: true
+  category: Build, Test, Deploy
+  sub_category: Continuous Integration
+  image_url: https://img.stackshare.io/service/11563/actions.png
+  detection_source_url: https://github.com/DarckRM/MyLouiseBot/blob/main/.github/workflows/maven.yml
+  detection_source: ".github/workflows/maven.yml"
+  last_updated_by: Akarin_lh
+  last_updated_on: 2023-09-02 12:47:08.000000000 Z
+- name: Apache Camel
+  description: A versatile open source integration framework
+  website_url: https://camel.apache.org/
+  license: Apache-2.0
+  open_source: true
+  hosted_saas: false
+  category: Application Hosting
+  sub_category: Platform as a Service
+  image_url: https://img.stackshare.io/service/3276/xWt1RFo6_400x400.jpg
+  detection_source_url: https://github.com/DarckRM/MyLouiseBot/blob/main/src/main/resources/application.yml
+  detection_source: src/main/resources/application.yml
+  last_updated_by: DarckRM
+  last_updated_on: 2023-04-20 20:26:50.000000000 Z
+- name: com.alibaba:fastjson
+  description: Fastjson is a JSON processor
+  license: Apache-2.0
+  open_source: true
+  hosted_saas: false
+  category: Libraries
+  sub_category: Maven Packages
+  image_url: https://img.stackshare.io/package/maven/image.png
+  detection_source_url: https://github.com/DarckRM/MyLouiseBot/blob/main/pom.xml
+  detection_source: pom.xml
+  last_updated_by: DarckRM
+  last_updated_on: 2023-04-18 16:14:58.000000000 Z
+- name: com.github.oshi:oshi-core
+  description: A JNA-based
+  version: 6.5.0
+  license: MIT
+  open_source: true
+  hosted_saas: false
+  category: Libraries
+  sub_category: Maven Packages
+  image_url: https://img.stackshare.io/package/maven/image.png
+  detection_source_url: https://github.com/DarckRM/MyLouiseBot/blob/main/pom.xml
+  detection_source: pom.xml
+  last_updated_by: DarckRM
+  last_updated_on: 2023-04-18 16:14:58.000000000 Z
+- name: com.squareup.okhttp3:okhttp
+  description: 'Null'
+  version: 4.9.0
+  license: Apache-2.0
+  open_source: true
+  hosted_saas: false
+  category: Libraries
+  sub_category: Maven Packages
+  image_url: https://img.stackshare.io/package/maven/image.png
+  detection_source_url: https://github.com/DarckRM/MyLouiseBot/blob/main/pom.xml
+  detection_source: pom.xml
+  last_updated_by: DarckRM
+  last_updated_on: 2023-04-18 16:14:58.000000000 Z
+- name: commons-codec:commons-codec
+  description: The Apache Commons Codec package contains simple encoder and decoders
+    for various formats such as Base64 and Hexadecimal
+  version: '1.13'
+  license: Apache-2.0
+  open_source: true
+  hosted_saas: false
+  category: Libraries
+  sub_category: Maven Packages
+  image_url: https://img.stackshare.io/package/maven/image.png
+  detection_source_url: https://github.com/DarckRM/MyLouiseBot/blob/main/pom.xml
+  detection_source: pom.xml
+  last_updated_by: DarckRM
+  last_updated_on: 2023-04-18 16:14:58.000000000 Z
+- name: mysql:mysql-connector-java
+  description: MySQL JDBC Type 4 driver
+  version: 8.0.32
+  license: GPL-3.0-only
+  open_source: true
+  hosted_saas: false
+  category: Libraries
+  sub_category: Maven Packages
+  image_url: https://img.stackshare.io/package/maven/image.png
+  detection_source_url: https://github.com/DarckRM/MyLouiseBot/blob/main/pom.xml
+  detection_source: pom.xml
+  last_updated_by: DarckRM
+  last_updated_on: 2024-03-17 04:48:13.000000000 Z
+- name: org.apache.httpcomponents:httpclient
+  description: Apache HttpComponents Client
+  version: 4.5.13
+  license: Apache-2.0
+  open_source: true
+  hosted_saas: false
+  category: Libraries
+  sub_category: Maven Packages
+  image_url: https://img.stackshare.io/package/maven/image.png
+  detection_source_url: https://github.com/DarckRM/MyLouiseBot/blob/main/pom.xml
+  detection_source: pom.xml
+  last_updated_by: DarckRM
+  last_updated_on: 2024-03-28 12:20:34.000000000 Z
+- name: org.jetbrains:annotations
+  description: A set of annotations used for code inspection support and code documentation
+  version: '13.0'
+  license: Apache-2.0
+  open_source: true
+  hosted_saas: false
+  category: Libraries
+  sub_category: Maven Packages
+  image_url: https://img.stackshare.io/package/maven/image.png
+  detection_source_url: https://github.com/DarckRM/MyLouiseBot/blob/main/pom.xml
+  detection_source: pom.xml
+  last_updated_by: DarckRM
+  last_updated_on: 2024-03-28 12:20:34.000000000 Z
+- name: org.jsoup:jsoup
+  description: Jsoup is a Java library for working with real-world HTML
+  version: 1.15.3
+  license: MIT
+  open_source: true
+  hosted_saas: false
+  category: Libraries
+  sub_category: Maven Packages
+  image_url: https://img.stackshare.io/package/maven/image.png
+  detection_source_url: https://github.com/DarckRM/MyLouiseBot/blob/main/pom.xml
+  detection_source: pom.xml
+  last_updated_by: DarckRM
+  last_updated_on: 2024-03-28 12:20:34.000000000 Z
+- name: org.projectlombok:lombok
+  description: 'Spice up your java: Automatic Resource Management'
+  version: 1.18.30
+  license: MIT
+  open_source: true
+  hosted_saas: false
+  category: Libraries
+  sub_category: Maven Packages
+  image_url: https://img.stackshare.io/package/maven/image.png
+  detection_source_url: https://github.com/DarckRM/MyLouiseBot/blob/main/pom.xml
+  detection_source: pom.xml
+  last_updated_by: DarckRM
+  last_updated_on: 2024-03-28 12:20:34.000000000 Z
+- name: org.springframework.boot:spring-boot-devtools
+  description: Spring Boot Developer Tools
+  license: Apache-2.0
+  open_source: true
+  hosted_saas: false
+  category: Libraries
+  sub_category: Maven Packages
+  image_url: https://img.stackshare.io/package/maven/image.png
+  detection_source_url: https://github.com/DarckRM/MyLouiseBot/blob/main/pom.xml
+  detection_source: pom.xml
+  last_updated_by: DarckRM
+  last_updated_on: 2024-03-28 12:20:34.000000000 Z
+- name: org.springframework.boot:spring-boot-starter-test
+  description: Starter for testing Spring Boot applications with libraries including
+    JUnit
+  license: Apache-2.0
+  open_source: true
+  hosted_saas: false
+  category: Libraries
+  sub_category: Maven Packages
+  image_url: https://img.stackshare.io/package/maven/image.png
+  detection_source_url: https://github.com/DarckRM/MyLouiseBot/blob/main/pom.xml
+  detection_source: pom.xml
+  last_updated_by: DarckRM
+  last_updated_on: 2024-03-28 12:20:34.000000000 Z
+- name: org.springframework.boot:spring-boot-starter-websocket
+  description: Starter for building WebSocket applications using Spring Framework's
+    WebSocket support
+  license: Apache-2.0
+  open_source: true
+  hosted_saas: false
+  category: Libraries
+  sub_category: Maven Packages
+  image_url: https://img.stackshare.io/package/maven/image.png
+  detection_source_url: https://github.com/DarckRM/MyLouiseBot/blob/main/pom.xml
+  detection_source: pom.xml
+  last_updated_by: DarckRM
+  last_updated_on: 2024-03-28 12:20:34.000000000 Z
+- name: redis.clients:jedis
+  description: Jedis is a blazingly small and sane Redis java client
+  version: 4.3.1
+  license: MIT
+  open_source: true
+  hosted_saas: false
+  category: Libraries
+  sub_category: Maven Packages
+  image_url: https://img.stackshare.io/package/maven/image.png
+  detection_source_url: https://github.com/DarckRM/MyLouiseBot/blob/main/pom.xml
+  detection_source: pom.xml
+  last_updated_by: DarckRM
+  last_updated_on: 2023-04-18 16:14:58.000000000 Z
